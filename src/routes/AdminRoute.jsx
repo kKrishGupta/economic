@@ -10,7 +10,7 @@ export function AdminRoute({ children }) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (user?.role !== 'Admin') {
+  if (user?.role !== 'ADMIN') {
     return <Navigate to="/unauthorized" replace />;
   }
 

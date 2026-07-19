@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useAuth } from '../providers/AuthProvider';
 import { 
   Activity, ShieldAlert, AlertTriangle, CheckCircle2, 
-  TrendingUp, Users, Clock, ThermometerSun
+  TrendingUp, Users, Clock, ThermometerSun, FileText
 } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -31,6 +32,12 @@ const anomalyData = [
 ];
 
 export default function Dashboard() {
+  const { user } = useAuth();
+
+  if (user?.role !== 'ADMIN') {
+    return <UserDashboardView user={user} />;
+  }
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -185,6 +192,117 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function UserDashboardView({ user }) {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Welcome, {user?.username || 'User'}!</h2>
+        <p className="text-muted-foreground mt-2">Here is your daily summary and quick links.</p>
+      </div>
+
+      <motion.div 
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+        className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+      >
+        <motion.div variants={itemVariants}>
+          <Card className="border-border/50 shadow-sm overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Your Active Permits</CardTitle>
+              <FileText className="w-4 h-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Hot work permit valid until 17:00
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card className="border-border/50 shadow-sm overflow-hidden relative group">
+            <div className="absolute inset-0 bg-gradient-to-br from-success/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Zone Safety</CardTitle>
+              <CheckCircle2 className="w-4 h-4 text-success" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-success">Optimal</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                No active hazards in your assigned area
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div variants={itemVariants}>
+          <Card className="border-border/50 shadow-sm overflow-hidden relative group h-full">
+            <div className="absolute inset-0 bg-gradient-to-br from-info/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Next Break</CardTitle>
+              <Clock className="w-4 h-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">12:30 PM</div>
+              <p className="text-xs text-muted-foreground mt-1">
+                In about 2 hours
+              </p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      <Card className="border-border/50 mt-6">
+        <CardHeader>
+          <CardTitle>Safety Reminders</CardTitle>
+          <CardDescription>General guidelines for your current shift.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-4">
+            <li className="flex items-start">
+              <div className="mt-1 mr-3 flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+              <div>
+                <p className="text-sm font-medium">Always wear your hard hat and safety glasses</p>
+                <p className="text-xs text-muted-foreground">Required in all active work zones.</p>
+              </div>
+            </li>
+            <li className="flex items-start">
+              <div className="mt-1 mr-3 flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+              <div>
+                <p className="text-sm font-medium">Report any unusual smells or sounds immediately</p>
+                <p className="text-xs text-muted-foreground">Use the quick report feature or notify your supervisor.</p>
+              </div>
+            </li>
+            <li className="flex items-start">
+              <div className="mt-1 mr-3 flex-shrink-0 w-2 h-2 rounded-full bg-primary" />
+              <div>
+                <p className="text-sm font-medium">Stay hydrated</p>
+                <p className="text-xs text-muted-foreground">Water stations are located in sectors A and C.</p>
+              </div>
+            </li>
+          </ul>
+        </CardContent>
+      </Card>
     </div>
   );
 }

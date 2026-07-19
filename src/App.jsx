@@ -36,6 +36,7 @@ const Analysis = lazy(() => import('./pages/Analysis'));
 const Sensors = lazy(() => import('./pages/Sensors'));
 const Permits = lazy(() => import('./pages/Permits'));
 const Admin = lazy(() => import('./pages/Admin'));
+const DashboardAbout = lazy(() => import('./pages/DashboardAbout'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Unauthorized = lazy(() => import('./pages/Unauthorized'));
 
@@ -94,21 +95,15 @@ function App() {
                   }
                 >
                   <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/analysis" element={<Analysis />} />
-                  <Route path="/sensors" element={<Sensors />} />
-                  <Route path="/permits" element={<Permits />} />
+                  <Route path="/dashboard-about" element={<DashboardAbout />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/settings" element={<Settings />} />
                   
-                  {/* Admin Only Route inside Dashboard */}
-                  <Route 
-                    path="/admin" 
-                    element={
-                      <AdminRoute>
-                        <Admin />
-                      </AdminRoute>
-                    } 
-                  />
+                  {/* Admin Only Routes inside Dashboard */}
+                  <Route path="/analysis" element={<AdminRoute><Analysis /></AdminRoute>} />
+                  <Route path="/sensors" element={<AdminRoute><Sensors /></AdminRoute>} />
+                  <Route path="/permits" element={<AdminRoute><Permits /></AdminRoute>} />
+                  <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                 </Route>
 
                 <Route path="/unauthorized" element={<Unauthorized />} />

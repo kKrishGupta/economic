@@ -10,11 +10,12 @@ import {
 import { cn } from '../utils/cn';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Analysis', href: '/analysis', icon: Activity },
-  { name: 'Sensors', href: '/sensors', icon: Radio },
-  { name: 'Permits', href: '/permits', icon: FileText },
-  { name: 'Admin', href: '/admin', icon: ShieldAlert, role: 'Admin' },
+  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'USER'] },
+  { name: 'Analysis', href: '/analysis', icon: Activity, roles: ['ADMIN'] },
+  { name: 'Sensors', href: '/sensors', icon: Radio, roles: ['ADMIN'] },
+  { name: 'Permits', href: '/permits', icon: FileText, roles: ['ADMIN'] },
+  { name: 'About Us', href: '/dashboard-about', icon: FileText, roles: ['ADMIN', 'USER'] },
+  { name: 'Admin', href: '/admin', icon: ShieldAlert, roles: ['ADMIN'] },
 ];
 
 export function DashboardLayout() {
@@ -42,7 +43,7 @@ export function DashboardLayout() {
   }
 
   const filteredNavigation = navigation.filter(
-    (item) => !item.role || item.role === user?.role
+    (item) => !item.roles || item.roles.includes(user?.role)
   );
 
   return (

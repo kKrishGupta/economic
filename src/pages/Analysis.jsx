@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, CheckCircle2, AlertCircle, Loader2, PlayCircle, BarChart3 } from 'lucide-react';
+import { Upload, CheckCircle2, AlertCircle, Loader2, PlayCircle, Image as ImageIcon } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { useSubmitAnalysis, useAnalysisStatus } from '../hooks/useAnalysis';
@@ -39,7 +39,7 @@ export default function Analysis() {
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/json': ['.json'],
+      'image/*': ['.jpeg', '.jpg', '.png', '.webp'],
     },
     maxFiles: 1
   });
@@ -52,7 +52,12 @@ export default function Analysis() {
       zoneId: "Zone B",
       shiftRiskFactor: 0.15,
       sensorRawHistory: [[10.5, 2.1], [11.0, 2.3], [12.4, 2.8]],
-      cvRawFrame: { "camera": "cam-01", "objects": ["person", "hardhat"] },
+      cvRawFrame: { 
+        "camera": "cam-01", 
+        "objects": ["person", "hardhat"],
+        "hasImage": !!file,
+        "fileName": file ? file.name : "default_frame.jpg"
+      },
       activePermitsRaw: [{ "permitId": "PTW-100", "type": "Hot Work" }]
     };
 
@@ -130,15 +135,18 @@ export default function Analysis() {
                   <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                     <Upload className="w-8 h-8" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">Upload Payload JSON (Optional)</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Click "Start Analysis" to use the default payload.</p>
+                  <h3 className="text-lg font-semibold mb-2">Upload Camera Frame (Optional)</h3>
+                  <p className="text-sm text-muted-foreground mb-4">Click "Start Analysis" to use the default camera feed.</p>
                   
                   {file && (
-                    <div className="mt-6 p-3 bg-background border border-border rounded-lg inline-flex items-center gap-3">
-                       <BarChart3 className="w-5 h-5 text-primary" />
-                       <div className="text-left">
-                         <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
-                         <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <div className="mt-6 p-4 bg-background border border-border rounded-xl inline-flex flex-col items-center gap-3">
+                       <img src={URL.createObjectURL(file)} alt="Preview" className="w-full max-w-[240px] h-auto rounded-lg object-cover shadow-sm" />
+                       <div className="flex items-center gap-2">
+                         <ImageIcon className="w-4 h-4 text-primary" />
+                         <div className="text-left">
+                           <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
+                           <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                         </div>
                        </div>
                     </div>
                   )}
