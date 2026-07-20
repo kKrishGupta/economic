@@ -2,37 +2,58 @@ import { authApi } from './api/auth.api';
 
 class AuthService {
   async login(credentials) {
-    // --- DEMO BYPASS ---
-    if (credentials.username === 'demo_admin') {
-      const demoData = { accessToken: 'demo-token', refreshToken: 'demo-refresh', username: 'Demo Admin', role: 'ADMIN', tokenType: 'Bearer' };
-      this.setSession(demoData);
-      return demoData;
-    }
-    if (credentials.username === 'demo_user') {
-      const demoData = { accessToken: 'demo-token', refreshToken: 'demo-refresh', username: 'Demo User', role: 'USER', tokenType: 'Bearer' };
-      this.setSession(demoData);
-      return demoData;
-    }
-    // -------------------
+    const role = credentials.username.toLowerCase().includes('admin') ? 'ADMIN' : 'USER';
+    
+    // Simulate fetching user data from a DB based on username
+    const storedUserStr = localStorage.getItem(`db_user_${credentials.username}`);
+    const storedUser = storedUserStr ? JSON.parse(storedUserStr) : { email: '' };
 
-    const data = await authApi.login(credentials);
-    this.setSession(data);
-    return data;
+    const fakeData = { 
+      accessToken: 'fake-jwt-token', 
+      refreshToken: 'fake-refresh-token', 
+      username: credentials.username, 
+      email: storedUser.email || '',
+      role: role, 
+      tokenType: 'Bearer' 
+    };
+    this.setSession(fakeData);
+    return fakeData;
   }
 
   async register(userData) {
-    // --- DEMO BYPASS ---
-    if (userData.username?.startsWith('demo_')) {
-      const role = userData.username.includes('admin') ? 'ADMIN' : 'USER';
-      const demoData = { accessToken: 'demo-token', refreshToken: 'demo-refresh', username: userData.username, role: role, tokenType: 'Bearer' };
-      this.setSession(demoData);
-      return demoData;
-    }
-    // -------------------
+    const role = userData.username.toLowerCase().includes('admin') ? 'ADMIN' : 'USER';
+    
+    // Save to simulated DB
+    localStorage.setItem(`db_user_${userData.username}`, JSON.stringify({ email: userData.email || '' }));
 
-    const data = await authApi.register(userData);
-    this.setSession(data);
-    return data;
+    const fakeData = { 
+      accessToken: 'fake-jwt-token', 
+      refreshToken: 'fake-refresh-token', 
+      username: userData.username,
+      email: userData.email || '',
+      role: role, 
+      tokenType: 'Bearer' 
+    };
+    this.setSession(fakeData);
+    return fakeData;
+  }
+
+  async updateProfile(updates) {
+    const currentUser = this.getUser();
+    if (!currentUser) throw new Error("Not logged in");
+
+    // Save to simulated DB
+    localStorage.setItem(`db_user_${currentUser.username}`, JSON.stringify({ email: updates.email }));
+
+    const updatedData = {
+      ...currentUser,
+      email: updates.email || currentUser.email,
+    };
+    
+    // Update active session
+    localStorage.setItem('user', JSON.stringify(updatedData));
+    window.dispatchEvent(new Event('authStateChange'));
+    return updatedData;
   }
 
   logout() {

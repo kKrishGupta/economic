@@ -1,40 +1,22 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, CheckCircle2, AlertCircle, Loader2, PlayCircle, Image as ImageIcon } from 'lucide-react';
+import { Upload, CheckCircle2, AlertCircle, Loader2, PlayCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
-import { useSubmitAnalysis, useAnalysisStatus } from '../hooks/useAnalysis';
-
-const steps = [
-  { id: 'upload', name: 'Data Upload' },
-  { id: 'processing', name: 'AI Analysis' },
-  { id: 'results', name: 'Results' }
-];
+import { useSafetyEval } from '../hooks/api/useEval';
 
 export default function Analysis() {
-  const [currentStep, setCurrentStep] = useState(0);
   const [file, setFile] = useState(null);
-  const [jobId, setJobId] = useState(null);
+  
+  // Real backend hook
+  const { mutate: evaluateSafety, isPending, data: evalResult, isError, error, reset } = useSafetyEval();
 
-  const { mutateAsync: submitAnalysis, isPending: isSubmitting } = useSubmitAnalysis();
-  const { data: jobStatus, isLoading: isPolling } = useAnalysisStatus(jobId);
-
-  useEffect(() => {
-    if (jobStatus) {
-      if (jobStatus.status === 'COMPLETED') {
-        setCurrentStep(2);
-      } else if (jobStatus.status === 'FAILED') {
-        setCurrentStep(2); // We can render error in step 2
-      }
-    }
-  }, [jobStatus]);
-
-  const onDrop = useCallback(acceptedFiles => {
+  const onDrop = (acceptedFiles) => {
     if (acceptedFiles?.length > 0) {
       setFile(acceptedFiles[0]);
     }
-  }, []);
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -44,82 +26,55 @@ export default function Analysis() {
     maxFiles: 1
   });
 
-  const startAnalysis = async () => {
-    setCurrentStep(1);
-    
-    // Construct a valid payload matching AnalysisRequest
+  const startAnalysis = () => {
+    // Exact schema matched to backend's SafetyEvalRequest
     const payload = {
-      zoneId: "Zone B",
-      shiftRiskFactor: 0.15,
-      sensorRawHistory: [[10.5, 2.1], [11.0, 2.3], [12.4, 2.8]],
-      cvRawFrame: { 
-        "camera": "cam-01", 
-        "objects": ["person", "hardhat"],
-        "hasImage": !!file,
-        "fileName": file ? file.name : "default_frame.jpg"
+      zone_id: "ZONE_3",
+      shift_risk_factor: 0.15,
+      sensor_raw_history: [
+        [18.0, 28.0, 1.2],
+        [21.0, 28.5, 1.2],
+        [38.0, 31.0, 1.8] // Anomaly spike
+      ],
+      cv_raw_frame: { 
+        zone_id: "ZONE_3", 
+        workers_detected: 2,
+        violations: [
+          { worker_id: "W_1", violation_type: "NO_HELMET" }
+        ]
       },
-      activePermitsRaw: [{ "permitId": "PTW-100", "type": "Hot Work" }]
+      active_permits_raw: [
+        {
+          permit_id: "HW_042",
+          type: "HOT_WORK",
+          zone_id: "ZONE_3",
+          start_time: new Date().toISOString(),
+          expiry: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString()
+        }
+      ]
     };
 
-    try {
-      const response = await submitAnalysis(payload);
-      if (response && response.jobId) {
-        setJobId(response.jobId);
-      }
-    } catch (error) {
-      setCurrentStep(0);
-    }
+    evaluateSafety(payload);
   };
 
-  const reset = () => {
-    setCurrentStep(0);
+  const handleReset = () => {
     setFile(null);
-    setJobId(null);
+    reset();
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">AI Analysis Workspace</h2>
-        <p className="text-muted-foreground mt-2">Submit sensor data logs or camera frames for deep neural network analysis via async job queue.</p>
+        <h2 className="text-3xl font-bold tracking-tight">AI Safety Evaluation</h2>
+        <p className="text-muted-foreground mt-2">Trigger a complete LangGraph agent evaluation across Sensor, CV, and Permit systems.</p>
       </div>
 
-      {/* Stepper */}
-      <div className="relative">
-        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-border -translate-y-1/2 rounded" />
-        <div className="absolute top-1/2 left-0 h-0.5 bg-primary -translate-y-1/2 rounded transition-all duration-500 ease-in-out" 
-             style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }} />
-        
-        <div className="relative flex justify-between">
-          {steps.map((step, index) => {
-            const isCompleted = index < currentStep;
-            const isCurrent = index === currentStep;
-            
-            return (
-              <div key={step.id} className="flex flex-col items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center z-10 transition-colors duration-300 ${
-                  isCompleted ? 'bg-primary text-primary-foreground' :
-                  isCurrent ? 'bg-background border-2 border-primary text-primary' :
-                  'bg-background border-2 border-border text-muted-foreground'
-                }`}>
-                  {isCompleted ? <CheckCircle2 className="w-6 h-6" /> : <span className="font-semibold">{index + 1}</span>}
-                </div>
-                <span className={`mt-2 text-sm font-medium ${isCurrent ? 'text-primary' : 'text-muted-foreground'}`}>
-                  {step.name}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Content Area */}
       <Card className="border-border/50 min-h-[400px]">
         <CardContent className="p-8">
           <AnimatePresence mode="wait">
-            {currentStep === 0 && (
+            {!isPending && !evalResult && !isError && (
               <motion.div
-                key="step-0"
+                key="step-upload"
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -20 }}
@@ -136,36 +91,29 @@ export default function Analysis() {
                     <Upload className="w-8 h-8" />
                   </div>
                   <h3 className="text-lg font-semibold mb-2">Upload Camera Frame (Optional)</h3>
-                  <p className="text-sm text-muted-foreground mb-4">Click "Start Analysis" to use the default camera feed.</p>
+                  <p className="text-sm text-muted-foreground mb-4">Simulate the visual feed for the CV Agent.</p>
                   
                   {file && (
-                    <div className="mt-6 p-4 bg-background border border-border rounded-xl inline-flex flex-col items-center gap-3">
-                       <img src={URL.createObjectURL(file)} alt="Preview" className="w-full max-w-[240px] h-auto rounded-lg object-cover shadow-sm" />
-                       <div className="flex items-center gap-2">
-                         <ImageIcon className="w-4 h-4 text-primary" />
-                         <div className="text-left">
-                           <p className="text-sm font-medium truncate max-w-[200px]">{file.name}</p>
-                           <p className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                         </div>
-                       </div>
+                    <div className="mt-4 p-4 bg-background border border-border rounded-xl inline-flex flex-col items-center">
+                       <p className="text-sm font-medium">{file.name}</p>
                     </div>
                   )}
                 </div>
 
                 <div className="flex justify-end">
-                  <Button size="lg" onClick={startAnalysis} isLoading={isSubmitting}>
-                    Start Analysis <PlayCircle className="w-5 h-5 ml-2" />
+                  <Button size="lg" onClick={startAnalysis}>
+                    Run Agent Evaluation <PlayCircle className="w-5 h-5 ml-2" />
                   </Button>
                 </div>
               </motion.div>
             )}
 
-            {currentStep === 1 && (
+            {isPending && (
               <motion.div
-                key="step-1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
+                key="step-processing"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 className="flex flex-col items-center justify-center min-h-[300px] space-y-8"
               >
                 <div className="relative w-32 h-32">
@@ -173,57 +121,82 @@ export default function Analysis() {
                 </div>
                 <div className="text-center space-y-2">
                   <h3 className="text-xl font-semibold flex items-center justify-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" /> Job Status: {jobStatus?.status || 'SUBMITTED'}
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" /> Orchestrating Agents...
                   </h3>
-                  <p className="text-muted-foreground">Job ID: {jobId}</p>
-                  <p className="text-sm text-primary animate-pulse">Polling backend for results...</p>
+                  <p className="text-muted-foreground">Running Sensor, CV, and Permit logic...</p>
                 </div>
               </motion.div>
             )}
 
-            {currentStep === 2 && jobStatus && (
+            {isError && (
               <motion.div
-                key="step-2"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="space-y-6"
+                key="step-error"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center p-8 bg-destructive/10 border border-destructive/20 rounded-xl"
               >
-                {jobStatus.status === 'COMPLETED' ? (
-                  <>
-                    <div className="flex items-center justify-between p-6 bg-success/10 border border-success/20 rounded-xl">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-success rounded-full flex items-center justify-center text-success-foreground shadow-lg shadow-success/30">
-                          <CheckCircle2 className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-success">Analysis Complete</h3>
-                          <p className="text-sm font-medium">Job {jobId} finished successfully.</p>
-                        </div>
+                 <AlertCircle className="w-12 h-12 text-destructive mb-4" />
+                 <h3 className="text-xl font-bold text-destructive">Evaluation Failed</h3>
+                 <p className="text-muted-foreground mt-2">{error?.response?.data?.detail || 'The backend could not process the request.'}</p>
+                 <Button variant="outline" className="mt-6" onClick={handleReset}>Try Again</Button>
+              </motion.div>
+            )}
+
+            {evalResult && (
+              <motion.div
+                key="step-results"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-8"
+              >
+                <div className={`p-6 border rounded-xl flex items-center gap-6 ${evalResult.risk_fusion_out?.severity === 'CRITICAL' ? 'bg-destructive/10 border-destructive/30' : 'bg-success/10 border-success/30'}`}>
+                   <ShieldAlert className={`w-12 h-12 ${evalResult.risk_fusion_out?.severity === 'CRITICAL' ? 'text-destructive' : 'text-success'}`} />
+                   <div>
+                     <h3 className="text-2xl font-bold">Action Taken: {evalResult.action_taken}</h3>
+                     <p className="text-muted-foreground">Risk Score: {evalResult.risk_fusion_out?.score} | Severity: {evalResult.risk_fusion_out?.severity}</p>
+                   </div>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-6">
+                   <Card>
+                     <CardContent className="p-6">
+                       <h4 className="font-bold mb-2">Sensor Agent</h4>
+                       <p className="text-sm">Anomaly Score: {evalResult.sensor_anomaly_out?.anomaly_score}</p>
+                       <p className="text-sm">Severity: {evalResult.sensor_anomaly_out?.severity}</p>
+                     </CardContent>
+                   </Card>
+                   <Card>
+                     <CardContent className="p-6">
+                       <h4 className="font-bold mb-2">CV Agent</h4>
+                       <p className="text-sm">Violations: {evalResult.cv_safety_out?.violations?.length}</p>
+                     </CardContent>
+                   </Card>
+                   <Card>
+                     <CardContent className="p-6">
+                       <h4 className="font-bold mb-2">Permit Agent</h4>
+                       <p className="text-sm">Conflicts: {evalResult.permit_intel_out?.conflicts?.length}</p>
+                     </CardContent>
+                   </Card>
+                </div>
+
+                {evalResult.rag_compliance_out && (
+                  <Card className="border-warning/50 bg-warning/5">
+                    <CardContent className="p-6">
+                      <h4 className="font-bold text-warning mb-4">AI Compliance Recommendations (RAG)</h4>
+                      <ul className="list-disc pl-5 space-y-2">
+                        {evalResult.rag_compliance_out.recommended_actions?.map((action, i) => (
+                          <li key={i} className="text-sm">{action}</li>
+                        ))}
+                      </ul>
+                      <div className="mt-4 pt-4 border-t border-warning/20">
+                        <p className="text-xs text-muted-foreground">Sources cited: {evalResult.rag_compliance_out.rag_sources_cited?.join(', ')}</p>
                       </div>
-                    </div>
-                    <div className="p-6 bg-muted/50 rounded-xl border border-border">
-                      <h4 className="font-semibold mb-4">Raw Result Data</h4>
-                      <pre className="text-xs text-muted-foreground bg-card p-4 rounded border overflow-x-auto">
-                        {JSON.stringify(jobStatus.result, null, 2)}
-                      </pre>
-                    </div>
-                  </>
-                ) : (
-                  <div className="flex items-center justify-between p-6 bg-destructive/10 border border-destructive/20 rounded-xl">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-destructive rounded-full flex items-center justify-center text-destructive-foreground shadow-lg shadow-destructive/30">
-                        <AlertCircle className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-bold text-destructive">Analysis Failed</h3>
-                        <p className="text-sm font-medium">Job {jobId} encountered an error.</p>
-                      </div>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 )}
 
-                <div className="flex justify-end pt-4">
-                  <Button variant="outline" onClick={reset}>Analyze Another</Button>
+                <div className="flex justify-end">
+                  <Button variant="outline" onClick={handleReset}>New Evaluation</Button>
                 </div>
               </motion.div>
             )}

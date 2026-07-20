@@ -31,10 +31,20 @@ export function AuthProvider({ children }) {
     window.location.href = '/login';
   };
 
+  const updateRole = (newRole) => {
+    if (user) {
+      const updatedUser = { ...user, role: newRole };
+      setUser(updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      toast.success(`Role switched to ${newRole}`);
+    }
+  };
+
   const value = {
     user,
     isAuthenticated: !!user,
     logout,
+    updateRole,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

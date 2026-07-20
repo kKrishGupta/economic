@@ -8,6 +8,8 @@ import {
   LayoutDashboard, Activity, Radio, FileText, Settings, ShieldAlert
 } from 'lucide-react';
 import { cn } from '../utils/cn';
+import { useQueryClient } from '@tanstack/react-query';
+import { RoleSwitcher } from '../components/debug/RoleSwitcher';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'USER'] },
@@ -26,11 +28,28 @@ export function DashboardLayout() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
+  const queryClient = useQueryClient();
+  const latestEval = queryClient.getQueryData(['latestEval']);
+
   const [notifications, setNotifications] = useState([
-    { id: 1, title: 'Gas Leak Detected', message: 'Zone B has elevated methane levels.', type: 'danger', time: '2m ago', read: false },
-    { id: 2, title: 'Permit Approved', message: 'Hot work permit for Sector 4 is approved.', type: 'success', time: '1h ago', read: false },
-    { id: 3, title: 'Maintenance Required', message: 'Pump 03 vibrations exceeded threshold.', type: 'warning', time: '3h ago', read: false },
+    { id: 1, title: 'System Online', message: 'SafeOps AI backend connected.', type: 'success', time: 'Just now', read: false }
   ]);
+
+  // Dynamically push new notifications when latestEval changes
+  React.useEffect(() => {
+    if (latestEval) {
+      const severity = latestEval.risk_fusion_out?.severity;
+      const newNotif = {
+        id: Date.now(),
+        title: `Eval: ${latestEval.action_taken}`,
+        message: `Zone ${latestEval.zone_id} | Risk Score: ${latestEval.risk_fusion_out?.score?.toFixed(2) || 'N/A'}`,
+        type: severity === 'CRITICAL' ? 'danger' : severity === 'HIGH' ? 'warning' : 'success',
+        time: 'Just now',
+        read: false
+      };
+      setNotifications(prev => [newNotif, ...prev].slice(0, 5)); // Keep last 5
+    }
+  }, [latestEval]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -156,6 +175,8 @@ export function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-4">
+            <RoleSwitcher />
+            
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -180,7 +201,7 @@ export function DashboardLayout() {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute right-0 mt-2 w-80 rounded-xl shadow-xl bg-card ring-1 ring-black ring-opacity-5 border z-50 origin-top-right overflow-hidden"
+                    className="absolute right-[-60px] sm:right-0 mt-2 w-[calc(100vw-2rem)] sm:w-80 rounded-xl shadow-xl bg-card ring-1 ring-black ring-opacity-5 border z-50 origin-top-right overflow-hidden"
                   >
                     <div className="px-4 py-3 border-b flex items-center justify-between bg-muted/30">
                       <h3 className="font-semibold text-sm">Notifications {unreadCount > 0 && `(${unreadCount})`}</h3>

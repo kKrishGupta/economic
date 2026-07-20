@@ -1,135 +1,132 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, ShieldAlert, CheckCircle2, AlertTriangle, Plus, Search } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
+import { FileText, Search, Filter, ShieldAlert, Loader2, PlayCircle } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
-
-const mockPermits = [
-  { id: 'PT-2023-104', type: 'Hot Work', zone: 'Sector 4', applicant: 'John Smith', risk: 'High', status: 'Pending Conflict Check' },
-  { id: 'PT-2023-103', type: 'Confined Space', zone: 'Tank 2', applicant: 'Sarah Connor', risk: 'Extreme', status: 'Approved' },
-  { id: 'PT-2023-102', type: 'Electrical', zone: 'Substation B', applicant: 'Mike Tyson', risk: 'Medium', status: 'Active' },
-  { id: 'PT-2023-101', type: 'Excavation', zone: 'North Yard', applicant: 'Bruce Wayne', risk: 'Low', status: 'Completed' },
-];
+import { usePermitAnalysis } from '../hooks/api/usePermits';
 
 export default function Permits() {
+  const { mutate: analyzePermit, isPending, data: permitData, isError, error } = usePermitAnalysis();
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const filteredPermits = mockPermits.filter(p => 
-    p.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    p.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.zone.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
+  const triggerPermitAnalysis = () => {
+    const payload = {
+      permits: [
+        {
+          permit_id: "HW_042",
+          type: "HOT_WORK",
+          zone_id: "ZONE_3",
+          expiry: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+        }
+      ],
+      current_time: new Date().toISOString(),
+      current_gas: 25.0 // Trigger OISD-105 Clause 4.3 violation
+    };
+    analyzePermit(payload);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Permit to Work</h2>
-          <p className="text-muted-foreground mt-2">Manage permits and detect spatial/temporal conflicts using AI.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Active Work Permits</h2>
+          <p className="text-muted-foreground mt-2">Manage PTWs and run SIMOPS conflict detection.</p>
         </div>
-        <Button>
-          <Plus className="w-4 h-4 mr-2" /> New Permit
+        <Button onClick={triggerPermitAnalysis} disabled={isPending} className="whitespace-nowrap">
+          {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PlayCircle className="w-4 h-4 mr-2" />}
+          Run SIMOPS Analysis
         </Button>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <Card className="border-border/50">
-            <div className="p-4 border-b flex items-center justify-between bg-muted/30">
-              <div className="relative w-full max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search permits..." 
-                  className="pl-9 bg-background"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm text-left">
-                <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b">
-                  <tr>
-                    <th className="px-6 py-4 font-medium">Permit ID</th>
-                    <th className="px-6 py-4 font-medium">Type</th>
-                    <th className="px-6 py-4 font-medium">Zone</th>
-                    <th className="px-6 py-4 font-medium">Applicant</th>
-                    <th className="px-6 py-4 font-medium">Risk Level</th>
-                    <th className="px-6 py-4 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredPermits.map((permit, idx) => (
-                    <motion.tr 
-                      key={permit.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.05 }}
-                      className="bg-card border-b border-border/50 hover:bg-muted/30 transition-colors"
-                    >
-                      <td className="px-6 py-4 font-medium text-foreground">{permit.id}</td>
-                      <td className="px-6 py-4">{permit.type}</td>
-                      <td className="px-6 py-4">{permit.zone}</td>
-                      <td className="px-6 py-4">{permit.applicant}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
-                          permit.risk === 'High' || permit.risk === 'Extreme' ? 'bg-destructive/10 text-destructive' :
-                          permit.risk === 'Medium' ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
-                        }`}>
-                          {permit.risk}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-muted-foreground">{permit.status}</td>
-                    </motion.tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input 
+            placeholder="Search by permit ID, zone, or type..." 
+            className="pl-9"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
+        <Button variant="outline">
+          <Filter className="w-4 h-4 mr-2" />
+          Filter
+        </Button>
+      </div>
 
-        <div className="space-y-6">
-          <Card className="border-warning/50 bg-warning/5">
-            <CardHeader>
-              <CardTitle className="text-warning flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5" /> AI Conflict Detection
-              </CardTitle>
+      {isError && (
+         <div className="p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg">
+           Error running permit analysis: {error?.response?.data?.detail || 'Network error'}
+         </div>
+      )}
+
+      {permitData && permitData.conflicts?.length > 0 && (
+        <Card className="border-destructive/50 bg-destructive/5">
+          <CardHeader>
+            <CardTitle className="text-destructive flex items-center gap-2">
+              <ShieldAlert className="w-5 h-5" /> 
+              SIMOPS Conflicts Detected
+            </CardTitle>
+            <CardDescription>The Permit Agent detected violations in the current spatial graph.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <div className="space-y-4">
+               {permitData.conflicts.map((conflict, idx) => (
+                 <div key={idx} className="p-4 border border-destructive/20 bg-background rounded-lg">
+                    <h4 className="font-bold text-destructive">{conflict.conflict_type}</h4>
+                    <p className="text-sm mt-1">{conflict.risk_description}</p>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      Severity: {conflict.severity} | Zone: {conflict.zones_affected?.join(', ')}
+                    </div>
+                 </div>
+               ))}
+             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {[{
+            id: 'PTW-2026-001',
+            type: 'Hot Work',
+            zone: 'ZONE_3',
+            applicant: 'John Smith',
+            status: 'Active',
+            expiry: '17:00 Today',
+            risk: 'High'
+          }].map((permit) => (
+          <Card key={permit.id} className="border-border/50 hover:border-primary/50 transition-colors">
+            <CardHeader className="pb-2">
+              <div className="flex justify-between items-start">
+                <div className="p-2 bg-primary/10 rounded-lg">
+                  <FileText className="w-5 h-5 text-primary" />
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium bg-success/10 text-success`}>
+                  {permit.status}
+                </span>
+              </div>
+              <CardTitle className="text-lg mt-4">{permit.id}</CardTitle>
+              <CardDescription>{permit.type}</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-background border border-border/50 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2 text-foreground">Conflict Found</h4>
-                <p className="text-sm text-muted-foreground">
-                  <strong className="text-foreground">PT-2023-104 (Hot Work)</strong> in Sector 4 conflicts with a scheduled <strong className="text-foreground">Chemical Delivery</strong> in the adjacent loading bay at 14:00.
-                </p>
-                <div className="mt-4 flex gap-2">
-                  <Button variant="outline" size="sm" className="w-full text-xs">View Details</Button>
-                  <Button variant="destructive" size="sm" className="w-full text-xs">Reject Permit</Button>
+            <CardContent>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Zone</span>
+                  <span className="font-medium">{permit.zone}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Applicant</span>
+                  <span className="font-medium">{permit.applicant}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Expires</span>
+                  <span className="font-medium">{permit.expiry}</span>
                 </div>
               </div>
             </CardContent>
           </Card>
-
-          <Card className="border-border/50">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-success" /> AI Suggestions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                  Reschedule Hot Work PT-2023-104 to 16:00 when loading bay is clear.
-                </li>
-                <li className="flex items-start gap-2">
-                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
-                  Mandate additional fire watch for PT-2023-104 due to dry conditions.
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+        ))}
       </div>
     </div>
   );

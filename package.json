@@ -34,6 +34,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.1.1",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
@@ -41,6 +42,7 @@
     "oxlint": "^1.71.0",
     "postcss": "^8.5.19",
     "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
     "vite": "^8.1.1"
   }
 }
