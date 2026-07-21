@@ -2,40 +2,15 @@ import { authApi } from './api/auth.api';
 
 class AuthService {
   async login(credentials) {
-    const role = credentials.username.toLowerCase().includes('admin') ? 'ADMIN' : 'USER';
-    
-    // Simulate fetching user data from a DB based on username
-    const storedUserStr = localStorage.getItem(`db_user_${credentials.username}`);
-    const storedUser = storedUserStr ? JSON.parse(storedUserStr) : { email: '' };
-
-    const fakeData = { 
-      accessToken: 'fake-jwt-token', 
-      refreshToken: 'fake-refresh-token', 
-      username: credentials.username, 
-      email: storedUser.email || '',
-      role: role, 
-      tokenType: 'Bearer' 
-    };
-    this.setSession(fakeData);
-    return fakeData;
+    const data = await authApi.login(credentials);
+    this.setSession(data);
+    return data;
   }
 
   async register(userData) {
-    const role = userData.username.toLowerCase().includes('admin') ? 'ADMIN' : 'USER';
-    
-    // Save to simulated DB
-    localStorage.setItem(`db_user_${userData.username}`, JSON.stringify({ email: userData.email || '' }));
-
-    const fakeData = { 
-      accessToken: 'fake-jwt-token', 
-      refreshToken: 'fake-refresh-token', 
-      username: userData.username,
-      email: userData.email || '',
-      role: role, 
-      tokenType: 'Bearer' 
-    };
-    this.setSession(fakeData);
-    return fakeData;
+    const data = await authApi.register(userData);
+    this.setSession(data);
+    return data;
   }
 
   async updateProfile(updates) {

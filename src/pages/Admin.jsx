@@ -2,8 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ShieldAlert, Users, Activity, FileKey, Server, Cpu, Database } from 'lucide-react';
 import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
 import { DataTable } from '../components/ui/DataTable';
 import { useSystemHealth } from '../hooks/api/useDashboard';
+import { useSimulatorMode, useUpdateSimulatorMode, useTriggerScenario } from '../hooks/useSimulator';
+import { useAdminUsers, useAdminLogs, useAdminMetrics } from '../hooks/useAdmin';
 import { useQueryClient } from '@tanstack/react-query';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
@@ -15,6 +18,11 @@ export default function Admin() {
   const { data: healthData, isLoading: isLoadingHealth } = useSystemHealth();
   const queryClient = useQueryClient();
   const latestEval = queryClient.getQueryData(['latestEval']);
+
+  // Simulator Hooks
+  const { data: simModeData } = useSimulatorMode();
+  const { mutate: updateMode, isPending: isUpdatingMode } = useUpdateSimulatorMode();
+  const { mutate: triggerScenario, isPending: isTriggering } = useTriggerScenario();
 
   // Dynamic system load simulation based on health polling
   const [systemLoad, setSystemLoad] = useState(Array.from({length: 20}, (_, i) => ({ time: i, load: 20 + Math.random() * 10 })));
@@ -29,23 +37,10 @@ export default function Admin() {
     return () => clearInterval(interval);
   }, [latestEval]);
 
-  // Mock data for display purposes to keep the UI activated
-  const mockUsers = {
-    content: [
-      { username: 'admin_sys', email: 'admin@safeops.ai', role: 'ADMIN', createdAt: new Date().toISOString() },
-      { username: 'operator_b', email: 'op_b@safeops.ai', role: 'USER', createdAt: new Date().toISOString() },
-    ],
-    totalPages: 1
-  };
-
-  const mockLogs = {
-    content: [
-      { action: 'Sensor Analysis Triggered', userId: 'SYSTEM', ipAddress: 'localhost', createdAt: new Date().toISOString() },
-      { action: 'Health Check Polling', userId: 'SYSTEM', ipAddress: 'localhost', createdAt: new Date(Date.now() - 30000).toISOString() },
-      { action: 'Admin Login', userId: 'admin_sys', ipAddress: '192.168.1.100', createdAt: new Date(Date.now() - 60000).toISOString() }
-    ],
-    totalPages: 1
-  };
+  // Admin API Hooks
+  const { data: usersData, isLoading: isLoadingUsers } = useAdminUsers(userPage, pageSize);
+  const { data: logsData, isLoading: isLoadingLogs } = useAdminLogs(logPage, pageSize);
+  const { data: metricsData } = useAdminMetrics();
 
   const userColumns = useMemo(() => [
     {
@@ -71,13 +66,17 @@ export default function Admin() {
 
   const logColumns = useMemo(() => [
     {
-      accessorKey: 'action',
-      header: 'Action',
+      accessorKey: 'endpoint',
+      header: 'Endpoint / Action',
       cell: (info) => <span className="font-medium text-foreground">{info.getValue()}</span>
     },
     {
       accessorKey: 'userId',
-      header: 'User / Source',
+      header: 'User ID',
+    },
+    {
+      accessorKey: 'statusCode',
+      header: 'Status',
     },
     {
       accessorKey: 'createdAt',
@@ -135,15 +134,53 @@ export default function Admin() {
 
         <Card className="border-border/50 bg-card/50">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">AI Invocations</CardTitle>
+            <CardTitle className="text-sm font-medium">Total API Invocations</CardTitle>
             <Cpu className="w-4 h-4 text-primary" />
           </CardHeader>
           <CardContent>
-             <div className="text-2xl font-bold">{latestEval ? '24' : '23'}</div>
-             <p className="text-xs text-muted-foreground mt-1">Total API calls today</p>
+             <div className="text-2xl font-bold">{metricsData?.totalInvocations || '0'}</div>
+             <p className="text-xs text-muted-foreground mt-1">Total API calls recorded</p>
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-border/50 border-primary/20 bg-primary/5">
+        <CardHeader>
+          <CardTitle className="text-xl">Simulation & Scenario Control</CardTitle>
+          <CardDescription>Manually override the sensor stream or trigger historical disaster scenarios.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm">Operation Mode</h3>
+            <div className="flex gap-2">
+              {['NORMAL', 'DRIFT', 'SPIKE'].map((mode) => (
+                <Button 
+                  key={mode}
+                  variant={simModeData?.simulationMode === mode ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => updateMode({ simulationMode: mode, zoneId: 'ZONE_3' })}
+                  disabled={isUpdatingMode}
+                >
+                  {mode}
+                </Button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">
+              Current Mode: <span className="font-bold text-primary">{simModeData?.simulationMode || 'Loading...'}</span> | Zone: {simModeData?.zoneId}
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="font-semibold text-sm">Trigger Historical Scenario</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="destructive" onClick={() => triggerScenario('VIZAG_2025')} disabled={isTriggering}>Vizag 2025</Button>
+              <Button size="sm" variant="destructive" onClick={() => triggerScenario('HPCL_2013')} disabled={isTriggering}>HPCL 2013</Button>
+              <Button size="sm" variant="destructive" onClick={() => triggerScenario('BHOPAL_OVERPRESSURE')} disabled={isTriggering}>Bhopal Mock</Button>
+              <Button size="sm" variant="outline" onClick={() => triggerScenario('NORMAL')} disabled={isTriggering}>Reset to Normal</Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-border/50">
         <CardHeader>
@@ -181,12 +218,12 @@ export default function Admin() {
           <CardContent>
             <DataTable
               columns={userColumns}
-              data={mockUsers.content}
-              pageCount={mockUsers.totalPages}
+              data={usersData?.content || []}
+              pageCount={usersData?.totalPages || 0}
               pageIndex={userPage}
               pageSize={pageSize}
               onPageChange={setUserPage}
-              isLoading={false}
+              isLoading={isLoadingUsers}
             />
           </CardContent>
         </Card>
@@ -200,12 +237,12 @@ export default function Admin() {
           <CardContent>
             <DataTable
               columns={logColumns}
-              data={mockLogs.content}
-              pageCount={mockLogs.totalPages}
+              data={logsData?.content || []}
+              pageCount={logsData?.totalPages || 0}
               pageIndex={logPage}
               pageSize={pageSize}
               onPageChange={setLogPage}
-              isLoading={false}
+              isLoading={isLoadingLogs}
             />
           </CardContent>
         </Card>

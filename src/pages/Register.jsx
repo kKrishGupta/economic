@@ -94,6 +94,18 @@ export default function Register() {
                 </button>
               </div>
             </div>
+            
+            <div className="space-y-1">
+              <label className="text-sm font-medium leading-none">Role</label>
+              <select
+                {...register("role")}
+                className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="USER">Standard User</option>
+                <option value="ADMIN">System Admin</option>
+              </select>
+              {errors.role && <p className="text-[0.8rem] font-medium text-destructive">{errors.role.message}</p>}
+            </div>
 
             {passwordValue && (
               <div className="bg-muted/50 rounded-lg p-3 text-xs space-y-1.5 border border-border/50">
@@ -123,9 +135,9 @@ export default function Register() {
                 type="button"
                 variant="outline"
                 className="w-full text-xs"
-                onClick={() => onSubmit({ username: `demo_user_${Math.floor(Math.random() * 1000)}`, email: 'demo@example.com', password: 'Password@123' })}
+                onClick={() => onSubmit({ username: `demo_user_${Math.floor(Math.random() * 1000)}`, email: 'demo@example.com', password: 'Password@123', role: 'ADMIN' })}
               >
-                Demo Registration
+                Demo Registration (Admin)
               </Button>
             </div>
           </form>

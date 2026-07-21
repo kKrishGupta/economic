@@ -4,13 +4,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, CheckCircle2, AlertCircle, Loader2, PlayCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
-import { useSafetyEval } from '../hooks/api/useEval';
+import { useSubmitAnalysis, useAnalysisStatus } from '../hooks/useAnalysis';
 
 export default function Analysis() {
   const [file, setFile] = useState(null);
+  const [jobId, setJobId] = useState(null);
   
-  // Real backend hook
-  const { mutate: evaluateSafety, isPending, data: evalResult, isError, error, reset } = useSafetyEval();
+  const { mutate: submitAnalysis, isPending: isSubmitting, isError: isSubmitError, error: submitError } = useSubmitAnalysis();
+  const { data: statusData, isError: isPollError } = useAnalysisStatus(jobId);
 
   const onDrop = (acceptedFiles) => {
     if (acceptedFiles?.length > 0) {
@@ -27,40 +28,48 @@ export default function Analysis() {
   });
 
   const startAnalysis = () => {
-    // Exact schema matched to backend's SafetyEvalRequest
     const payload = {
-      zone_id: "ZONE_3",
-      shift_risk_factor: 0.15,
-      sensor_raw_history: [
+      zoneId: "ZONE_3",
+      shiftRiskFactor: 0.15,
+      sensorRawHistory: [
         [18.0, 28.0, 1.2],
         [21.0, 28.5, 1.2],
-        [38.0, 31.0, 1.8] // Anomaly spike
+        [38.0, 31.0, 1.8]
       ],
-      cv_raw_frame: { 
-        zone_id: "ZONE_3", 
-        workers_detected: 2,
+      cvRawFrame: { 
+        zoneId: "ZONE_3", 
+        workersDetected: 2,
         violations: [
           { worker_id: "W_1", violation_type: "NO_HELMET" }
         ]
       },
-      active_permits_raw: [
+      activePermitsRaw: [
         {
           permit_id: "HW_042",
           type: "HOT_WORK",
-          zone_id: "ZONE_3",
+          zoneId: "ZONE_3",
           start_time: new Date().toISOString(),
           expiry: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString()
         }
       ]
     };
 
-    evaluateSafety(payload);
+    submitAnalysis(payload, {
+      onSuccess: (data) => {
+        setJobId(data.jobId);
+      }
+    });
   };
 
   const handleReset = () => {
     setFile(null);
-    reset();
+    setJobId(null);
   };
+
+  const isPending = isSubmitting || (jobId && statusData && (statusData.status === 'PROCESSING' || statusData.status === 'PENDING'));
+  const evalResult = statusData?.status === 'COMPLETED' ? statusData.result : null;
+  const isError = isSubmitError || isPollError || statusData?.status === 'FAILED';
+  const errorObj = submitError || (statusData?.errorMessage ? { response: { data: { detail: statusData.errorMessage } } } : null);
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
@@ -121,9 +130,10 @@ export default function Analysis() {
                 </div>
                 <div className="text-center space-y-2">
                   <h3 className="text-xl font-semibold flex items-center justify-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-primary" /> Orchestrating Agents...
+                    <Loader2 className="w-5 h-5 animate-spin text-primary" /> 
+                    {statusData?.status === 'PROCESSING' ? 'Evaluating Safety Logic...' : 'Job Queued...'}
                   </h3>
-                  <p className="text-muted-foreground">Running Sensor, CV, and Permit logic...</p>
+                  <p className="text-muted-foreground">Running Sensor, CV, and Permit logic asynchronously...</p>
                 </div>
               </motion.div>
             )}
@@ -137,7 +147,7 @@ export default function Analysis() {
               >
                  <AlertCircle className="w-12 h-12 text-destructive mb-4" />
                  <h3 className="text-xl font-bold text-destructive">Evaluation Failed</h3>
-                 <p className="text-muted-foreground mt-2">{error?.response?.data?.detail || 'The backend could not process the request.'}</p>
+                 <p className="text-muted-foreground mt-2">{errorObj?.response?.data?.detail || 'The backend could not process the request.'}</p>
                  <Button variant="outline" className="mt-6" onClick={handleReset}>Try Again</Button>
               </motion.div>
             )}

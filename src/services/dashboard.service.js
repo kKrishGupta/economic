@@ -7,6 +7,14 @@ import api from './api';
  * @returns {Promise<Object>} Status object
  */
 export const getSystemHealth = async () => {
-  const response = await api.get('/health');
-  return response.data;
+  try {
+    const response = await api.get('/actuator/health');
+    return response.data;
+  } catch (error) {
+    if (error.response && error.response.status === 503) {
+      // Actuator returns 503 when status is DOWN (e.g., a component like modelService is unreachable)
+      return error.response.data;
+    }
+    throw error;
+  }
 };

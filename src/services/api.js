@@ -1,8 +1,8 @@
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
-// Base URL points to the backend (FastAPI default port is 7860)
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:7860';
+// Base URL points to the backend
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -15,11 +15,11 @@ export const api = axios.create({
 // Request Interceptor
 api.interceptors.request.use(
   (config) => {
-    // If we add auth later, we inject token here
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    // Inject token for protected routes
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {

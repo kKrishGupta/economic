@@ -1,53 +1,34 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../providers/AuthProvider';
 import { 
   Activity, ShieldAlert, AlertTriangle, CheckCircle2, 
-  TrendingUp, Users, Clock, ThermometerSun, FileText, Loader2
+  Users, Clock, ThermometerSun, Radio, Zap
 } from 'lucide-react';
 import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area
+  PieChart, Pie, Cell, ResponsiveContainer,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useSystemHealth } from '../hooks/api/useDashboard';
-import { useSafetyEval } from '../hooks/api/useEval';
-import { useQueryClient } from '@tanstack/react-query';
+import { useSafetySocket } from '../hooks/useSafetySocket';
+import { useSimulatorMode, useUpdateSimulatorMode } from '../hooks/useSimulator';
 
 export default function Dashboard() {
   const { user } = useAuth();
   
-  // Real backend polling
+  // Real backend polling for health
   const { data: healthData, isLoading: healthLoading } = useSystemHealth();
-  const queryClient = useQueryClient();
-  const latestEval = queryClient.getQueryData(['latestEval']);
-  const { mutate: runEval, isPending: evalLoading } = useSafetyEval();
 
-  const handleRunDiagnostics = () => {
-    runEval({
-      zone_id: "ZONE_3",
-      shift_risk_factor: 0.95,
-      sensor_raw_history: [
-        [18.0, 28.0, 1.2],
-        [38.0, 31.0, 1.8] // Anomaly spike
-      ],
-      cv_raw_frame: { 
-        zone_id: "ZONE_3", 
-        workers_detected: 2, 
-        violations: [{ worker_id: "W_1", violation_type: "NO_HELMET" }] 
-      },
-      active_permits_raw: [
-        {
-          permit_id: "HW_042",
-          type: "HOT_WORK",
-          zone_id: "ZONE_3",
-          start_time: new Date().toISOString(),
-          expiry: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString()
-        }
-      ]
-    });
-  };
+  const zoneId = 'ZONE_3';
+
+  // STOMP WebSocket Connection
+  const { isConnected, safetyData, error } = useSafetySocket(zoneId);
+
+  // Simulator Control Hooks
+  const { data: simModeData } = useSimulatorMode();
+  const { mutate: updateMode, isPending: isUpdatingMode } = useUpdateSimulatorMode();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -62,30 +43,92 @@ export default function Dashboard() {
     visible: { opacity: 1, y: 0 }
   };
 
+  // Determine colors based on severity
+  const severity = safetyData?.risk_fusion_out?.severity || 'NORMAL';
+  const isCritical = severity === 'CRITICAL';
+  const isHigh = severity === 'HIGH';
+  const isWarning = severity === 'MEDIUM';
+  const scoreColor = isCritical ? '#ef4444' : isHigh ? '#f97316' : isWarning ? '#eab308' : '#22c55e';
+  // Risk score is 0.0 (safe) to 1.0 (danger). Safety index = (1 - risk) * 100
+  const scoreValue = safetyData?.risk_fusion_out?.score !== undefined ? ((1 - safetyData.risk_fusion_out.score) * 100) : 100;
+  
+  const chartData = [
+    { name: 'Score', value: scoreValue },
+    { name: 'Remaining', value: 100 - scoreValue }
+  ];
+
+  const sensorChartData = safetyData?.sensor_raw_history?.map((reading, index) => ({
+    time: index,
+    Gas: reading[0],
+    Temp: reading[1],
+    Pressure: reading[2],
+  })) || [];
+
   return (
     <div className="space-y-6">
+      {/* Live STOMP Connection Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard Overview</h2>
-          <p className="text-muted-foreground mt-2">Real-time insights and system health status.</p>
+          <h2 className="text-3xl font-bold tracking-tight">Command Center</h2>
+          <p className="text-muted-foreground mt-2">God-Level Real-Time Artificial Intelligence Feed.</p>
         </div>
         <div className="flex flex-col items-start sm:items-end gap-2 mt-4 sm:mt-0">
            <div className="flex items-center gap-2">
-             {healthLoading ? (
-               <span className="flex items-center text-sm text-muted-foreground"><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Checking Backend...</span>
-             ) : (
-               <span className={`flex items-center text-sm font-medium ${healthData ? 'text-success' : 'text-destructive'}`}>
-                 <div className={`w-2 h-2 rounded-full mr-2 ${healthData ? 'bg-success' : 'bg-destructive'}`} />
-                 Backend {healthData ? 'Online' : 'Offline'}
-               </span>
-             )}
+             <span className={`flex items-center px-3 py-1 rounded-full text-xs font-bold border ${isConnected ? 'border-success text-success bg-success/10' : 'border-destructive text-destructive bg-destructive/10'}`}>
+               {isConnected ? <Radio className="w-3 h-3 mr-2 animate-pulse" /> : <AlertTriangle className="w-3 h-3 mr-2" />}
+               STOMP WebSocket: {isConnected ? 'LIVE' : 'DISCONNECTED'}
+             </span>
            </div>
-           <Button onClick={handleRunDiagnostics} disabled={evalLoading} size="sm" variant="outline" className="mt-2">
-             {evalLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Activity className="w-4 h-4 mr-2" />}
-             Run System Diagnostics
-           </Button>
+           {/* Quick Simulator Toggles */}
+           <div className="flex items-center gap-2 mt-1">
+             <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Sim Mode:</span>
+             <div className="flex gap-1">
+               {['NORMAL', 'DRIFT', 'SPIKE'].map((mode) => (
+                 <Button 
+                   key={mode}
+                   variant={simModeData?.simulationMode === mode ? 'default' : 'outline'}
+                   size="sm"
+                   className="h-6 text-[10px] px-2 py-0"
+                   onClick={() => updateMode({ simulationMode: mode, zoneId: 'ZONE_3' })}
+                   disabled={isUpdatingMode}
+                 >
+                   {mode}
+                 </Button>
+               ))}
+             </div>
+           </div>
+           {error && (
+             <span className="text-xs text-destructive flex items-center">
+               <ShieldAlert className="w-3 h-3 mr-1" /> {error}
+             </span>
+           )}
         </div>
       </div>
+
+      {/* Critical Anomaly Banner */}
+      <AnimatePresence>
+        {(isCritical || isHigh) && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: 'auto' }}
+            exit={{ opacity: 0, y: -20, height: 0 }}
+            className="w-full bg-destructive/20 border-l-4 border-destructive p-4 rounded-r-md flex items-center justify-between"
+          >
+            <div className="flex items-center">
+              <Zap className="w-6 h-6 text-destructive mr-3 animate-pulse" />
+              <div>
+                <h3 className="text-destructive font-bold">SYSTEM ANOMALY DETECTED</h3>
+                <p className="text-sm text-destructive/80">Sensor fusion engine has detected anomalous signatures in ZONE_3.</p>
+              </div>
+            </div>
+            {safetyData.action_taken !== 'NONE' && (
+               <div className="px-4 py-2 bg-destructive text-destructive-foreground font-bold rounded animate-bounce">
+                 ACTION: {safetyData.action_taken}
+               </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <motion.div 
         variants={containerVariants}
@@ -93,66 +136,88 @@ export default function Dashboard() {
         animate="visible"
         className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
       >
+        {/* Animated Radial Score */}
         <motion.div variants={itemVariants}>
-          <Card className={`border-border/50 shadow-sm overflow-hidden relative group ${latestEval?.risk_fusion_out?.severity === 'CRITICAL' ? 'border-destructive/50 bg-destructive/5' : ''}`}>
-            <div className="absolute inset-0 bg-gradient-to-br from-success/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Plant Safety Score</CardTitle>
-              <ShieldAlert className={`w-4 h-4 ${latestEval?.risk_fusion_out?.severity === 'CRITICAL' ? 'text-destructive' : 'text-success'}`} />
+          <Card className={`border-border/50 shadow-sm overflow-hidden relative group h-full ${isCritical ? 'border-destructive/50 bg-destructive/5' : ''}`}>
+            <CardHeader className="flex flex-row items-center justify-between pb-0">
+              <CardTitle className="text-sm font-medium">Live Safety Index</CardTitle>
+              <Activity className={`w-4 h-4 ${isCritical ? 'text-destructive animate-pulse' : 'text-success'}`} />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {latestEval ? ((1 - latestEval.risk_fusion_out.score) * 100).toFixed(1) + '%' : '98.5%'}
+            <CardContent className="flex flex-col items-center justify-center p-0 h-[120px] relative">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="80%"
+                    startAngle={180}
+                    endAngle={0}
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={0}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    <Cell fill={scoreColor} />
+                    <Cell fill="var(--muted)" opacity={0.2} />
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute bottom-4 flex flex-col items-center">
+                <span className="text-2xl font-black" style={{ color: scoreColor }}>
+                  {scoreValue.toFixed(1)}%
+                </span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                Score dynamically calculated by Risk Fusion Engine
-              </p>
             </CardContent>
           </Card>
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className="border-border/50 shadow-sm overflow-hidden relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-warning/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Card className={`border-border/50 shadow-sm overflow-hidden relative group h-full ${severity !== 'NORMAL' ? 'border-warning/50 bg-warning/5' : ''}`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Active Alerts</CardTitle>
-              <AlertTriangle className="w-4 h-4 text-warning" />
+              <CardTitle className="text-sm font-medium">Risk Level</CardTitle>
+              <AlertTriangle className={`w-4 h-4 ${safetyData?.risk_level !== 'NORMAL' ? 'text-warning' : 'text-muted-foreground'}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-warning">{latestEval?.risk_fusion_out?.severity === 'CRITICAL' ? '1' : '0'}</div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                Requires immediate attention
+              <div className="text-3xl font-bold mt-2" style={{ color: scoreColor }}>
+                {severity || 'UNKNOWN'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 flex items-center">
+                AI Evaluated Severity
               </p>
             </CardContent>
           </Card>
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className="border-border/50 shadow-sm overflow-hidden relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Card className="border-border/50 shadow-sm overflow-hidden relative group h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">System Status</CardTitle>
+              <CardTitle className="text-sm font-medium">System Health</CardTitle>
               <Users className="w-4 h-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold capitalize">{healthData?.status || 'Unknown'}</div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                {healthData?.agents?.length > 0 ? 'Agents loaded successfully' : 'Connecting...'}
+              <div className={`text-2xl font-bold capitalize mt-2 ${healthData?.status === 'DOWN' ? 'text-destructive' : 'text-success'}`}>
+                {healthData?.status || 'Unknown'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 flex items-center">
+                {healthData?.status === 'UP' ? 'All systems operational' : 
+                 healthData?.status === 'DOWN' ? 'Some components degraded' : 'Connecting...'}
               </p>
             </CardContent>
           </Card>
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className="border-border/50 shadow-sm overflow-hidden relative group">
-            <div className="absolute inset-0 bg-gradient-to-br from-destructive/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Card className="border-border/50 shadow-sm overflow-hidden relative group h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Latest Model Inference</CardTitle>
-              <ThermometerSun className="w-4 h-4 text-primary" />
+              <CardTitle className="text-sm font-medium">Auto Mitigation</CardTitle>
+              <ShieldAlert className="w-4 h-4 text-primary" />
             </CardHeader>
             <CardContent>
-              <div className="text-xl font-bold truncate">{latestEval?.action_taken || 'No Data'}</div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center">
+              <div className="text-xl font-bold mt-2 truncate">
+                {safetyData?.action_taken || 'Awaiting Data'}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 flex items-center">
                 LangGraph Output
               </p>
             </CardContent>
@@ -163,62 +228,144 @@ export default function Dashboard() {
       <div className="grid gap-6 md:grid-cols-7">
         <Card className="md:col-span-4 border-border/50">
           <CardHeader>
-            <CardTitle>RAG Compliance Overview</CardTitle>
-            <CardDescription>AI generated recommendations based on historical precedents.</CardDescription>
+            <CardTitle>AI Fusion Insights & Recommendations</CardTitle>
+            <CardDescription>Real-time intelligence from the multi-agent fusion engine.</CardDescription>
           </CardHeader>
           <CardContent>
-             {latestEval?.rag_compliance_out ? (
-                <div className="space-y-4">
-                   <div className="p-4 bg-muted rounded-lg">
-                      <h4 className="font-bold text-sm">Similar Historical Incident</h4>
-                      {latestEval.rag_compliance_out.similar_incidents?.map((inc, i) => (
-                        <div key={i} className="mt-2 text-sm text-muted-foreground">
-                          <strong>{inc.plant} ({inc.date}):</strong> {inc.description} <br/>
-                          <span className="text-destructive">Outcome: {inc.outcome}</span>
-                        </div>
-                      ))}
+             <div className="space-y-6 max-h-[350px] overflow-y-auto pr-2">
+               {/* Show Breakdown if available */}
+               {safetyData?.risk_fusion_out?.breakdown && (
+                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                   {Object.entries(safetyData.risk_fusion_out.breakdown).map(([key, value]) => (
+                     <div key={key} className="bg-muted/50 p-2 rounded-md border border-border/50 text-center">
+                       <p className="text-[10px] text-muted-foreground uppercase">{key.replace('_', ' ')}</p>
+                       <p className={`text-lg font-bold ${value > 0.5 ? 'text-destructive' : value > 0.2 ? 'text-warning' : 'text-success'}`}>
+                         {(value * 100).toFixed(0)}%
+                       </p>
+                     </div>
+                   ))}
+                 </div>
+               )}
+
+               {/* Show Sensor Anomaly Intel */}
+               {safetyData?.sensor_anomaly_out && (
+                 <div className="bg-primary/5 p-3 rounded-lg border border-primary/20 flex items-center justify-between">
+                   <div>
+                     <p className="text-xs font-semibold text-primary uppercase">Sensor Anomaly Engine</p>
+                     <p className="text-sm mt-1">Trend: <span className="font-bold">{safetyData.sensor_anomaly_out.trend}</span></p>
                    </div>
-                   <div className="p-4 bg-muted rounded-lg">
-                      <h4 className="font-bold text-sm">Applicable Regulations</h4>
-                      {latestEval.rag_compliance_out.applicable_regulations?.map((reg, i) => (
-                        <div key={i} className="mt-2 text-sm text-muted-foreground">
-                          <strong>{reg.regulation_id}:</strong> {reg.requirement}
-                        </div>
-                      ))}
+                   <div className="text-right">
+                     <p className="text-xs text-muted-foreground uppercase">Anomaly Score</p>
+                     <p className="text-lg font-black text-primary">{(safetyData.sensor_anomaly_out.anomaly_score * 100).toFixed(1)}%</p>
                    </div>
-                </div>
-             ) : (
-                <div className="h-[200px] flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-lg">
-                   Run an evaluation in the Analysis tab to view RAG recommendations.
-                </div>
-             )}
+                 </div>
+               )}
+
+               {/* Show Recommendations */}
+               {safetyData?.rag_compliance_out?.recommended_actions && safetyData.rag_compliance_out.recommended_actions.length > 0 ? (
+                 <div className="space-y-3 mt-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Recommended Mitigation</p>
+                    {safetyData.rag_compliance_out.recommended_actions.map((rec, i) => (
+                       <motion.div 
+                         key={i}
+                         initial={{ opacity: 0, x: -10 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         className="p-3 bg-primary/10 border border-primary/20 rounded-lg flex items-start space-x-3"
+                       >
+                         <CheckCircle2 className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+                         <span className="text-sm">{rec}</span>
+                       </motion.div>
+                    ))}
+                 </div>
+               ) : (
+                 <div className="mt-4 p-4 text-center text-sm text-muted-foreground border-2 border-dashed rounded-lg">
+                    No active compliance recommendations required. System is stable.
+                 </div>
+               )}
+             </div>
+           </CardContent>
+        </Card>
+
+        <Card className="md:col-span-7 border-border/50 mt-6">
+          <CardHeader>
+            <CardTitle>Live Sensor Telemetry</CardTitle>
+            <CardDescription>Real-time gas, temperature, and pressure readings for {zoneId || 'ZONE_3'}.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            {sensorChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={sensorChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                  <Line type="monotone" dataKey="Gas" stroke="#ef4444" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="Temp" stroke="#f97316" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="Pressure" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                  <CartesianGrid stroke="#ccc" strokeDasharray="5 5" opacity={0.2} />
+                  <XAxis dataKey="time" stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }} />
+                  <Legend />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-lg">
+                Waiting for sensor stream...
+              </div>
+            )}
           </CardContent>
         </Card>
 
         <Card className="md:col-span-3 border-border/50">
           <CardHeader>
-            <CardTitle>Recent Anomalies</CardTitle>
-            <CardDescription>Detected incidents requiring review.</CardDescription>
+            <CardTitle>Live Violations Feed</CardTitle>
+            <CardDescription>Computer vision infractions detected instantly.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              {latestEval ? (
-                 <div className="flex items-start space-x-4">
-                  <div className={`mt-1 rounded-full p-2 ${latestEval.risk_fusion_out?.severity === 'CRITICAL' ? 'bg-destructive/10' : 'bg-success/10'}`}>
-                    <Activity className={`w-4 h-4 ${latestEval.risk_fusion_out?.severity === 'CRITICAL' ? 'text-destructive' : 'text-success'}`} />
+            <div className="space-y-4">
+              {safetyData?.cv_safety_out?.violations && safetyData.cv_safety_out.violations.length > 0 ? (
+                safetyData.cv_safety_out.violations.map((violation, idx) => (
+                 <motion.div 
+                   key={idx}
+                   initial={{ opacity: 0, scale: 0.9 }}
+                   animate={{ opacity: 1, scale: 1 }}
+                   className="flex items-start space-x-4 bg-destructive/10 p-3 rounded-md border border-destructive/20"
+                 >
+                  <div className="mt-1 rounded-full p-2 bg-destructive/20">
+                    <AlertTriangle className="w-4 h-4 text-destructive" />
                   </div>
                   <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium leading-none">Global State Evaluated</p>
-                    <p className="text-xs text-muted-foreground">Zone: {latestEval.zone_id}</p>
-                    <p className="text-xs mt-2">{latestEval.action_taken}</p>
+                    <p className="text-sm font-medium leading-none text-destructive">CV Violation ({violation.worker_id || 'Unknown'})</p>
+                    <p className="text-xs mt-1">{violation.violation_type || JSON.stringify(violation)}</p>
                   </div>
                   <div className="text-xs text-muted-foreground flex items-center">
                     <Clock className="w-3 h-3 mr-1" />
-                    Just now
+                    Now
                   </div>
-                </div>
+                </motion.div>
+                ))
               ) : (
-                <div className="text-sm text-muted-foreground text-center mt-8">No recent alerts.</div>
+                <div className="text-sm text-success flex flex-col items-center justify-center p-8 border border-success/20 bg-success/5 rounded-md">
+                  <CheckCircle2 className="w-8 h-8 mb-2 opacity-50" />
+                  No violations detected
+                </div>
+              )}
+              
+              {safetyData?.permit_intel_out?.conflicts?.length > 0 && (
+                <div className="mt-4 space-y-4 border-t border-border/50 pt-4">
+                  <h4 className="text-sm font-semibold text-destructive flex items-center">
+                    <ShieldAlert className="w-4 h-4 mr-2" /> Permit Conflicts Detected!
+                  </h4>
+                  {safetyData.permit_intel_out.conflicts.map((conflict, idx) => (
+                    <motion.div 
+                      key={`conflict-${idx}`}
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex items-start space-x-4 bg-destructive/20 p-3 rounded-md border border-destructive/40"
+                    >
+                      <div className="flex-1 space-y-1">
+                        <p className="text-xs font-bold text-destructive">{conflict.reason}</p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               )}
             </div>
           </CardContent>
@@ -226,10 +373,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
-
-// UserDashboardView remains same for brevity...
-function UserDashboardView({ user }) {
-  // ... omitted to save space since we focus on Admin view
-  return <div>Welcome {user?.username}</div>;
 }
