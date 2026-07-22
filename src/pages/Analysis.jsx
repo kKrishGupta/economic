@@ -1,17 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Upload, CheckCircle2, AlertCircle, Loader2, PlayCircle, ShieldAlert } from 'lucide-react';
+import { Upload, CheckCircle2, AlertCircle, Loader2, PlayCircle, ShieldAlert, Camera, CameraOff, Video } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
 import { useSubmitAnalysis, useAnalysisStatus } from '../hooks/useAnalysis';
+import { api } from '../services/api/axios';
+import { toast } from 'react-hot-toast';
 
 export default function Analysis() {
+  const [mode, setMode] = useState('upload'); // 'upload' | 'live'
   const [file, setFile] = useState(null);
   const [jobId, setJobId] = useState(null);
+  const [isCameraRunning, setIsCameraRunning] = useState(false);
+  const [liveData, setLiveData] = useState(null);
   
   const { mutate: submitAnalysis, isPending: isSubmitting, isError: isSubmitError, error: submitError } = useSubmitAnalysis();
   const { data: statusData, isError: isPollError } = useAnalysisStatus(jobId);
+  const [isStartingCamera, setIsStartingCamera] = useState(false);
+  const [isStoppingCamera, setIsStoppingCamera] = useState(false);
+
+  useEffect(() => {
+    let eventSource;
+    if (isCameraRunning) {
+      eventSource = new EventSource(`/api/cv/stream`);
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          setLiveData(data);
+        } catch (e) {
+          console.error("Error parsing stream data", e);
+        }
+      };
+    }
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [isCameraRunning]);
 
   const onDrop = (acceptedFiles) => {
     if (acceptedFiles?.length > 0) {
@@ -27,21 +54,17 @@ export default function Analysis() {
     maxFiles: 1
   });
 
-  const startAnalysis = () => {
+  const handleStartAnalysis = () => {
     const payload = {
       zoneId: "ZONE_3",
       shiftRiskFactor: 0.15,
       sensorRawHistory: [
-        [18.0, 28.0, 1.2],
-        [21.0, 28.5, 1.2],
-        [38.0, 31.0, 1.8]
+        [18.0, 28.0, 1.2], [21.0, 28.5, 1.2], [38.0, 31.0, 1.8]
       ],
       cvRawFrame: { 
         zoneId: "ZONE_3", 
         workersDetected: 2,
-        violations: [
-          { worker_id: "W_1", violation_type: "NO_HELMET" }
-        ]
+        violations: [{ worker_id: "W_1", violation_type: "NO_HELMET" }]
       },
       activePermitsRaw: [
         {
@@ -53,12 +76,34 @@ export default function Analysis() {
         }
       ]
     };
+    submitAnalysis(payload, { onSuccess: (data) => setJobId(data.jobId) });
+  };
 
-    submitAnalysis(payload, {
-      onSuccess: (data) => {
-        setJobId(data.jobId);
+  const toggleCamera = async () => {
+    if (isCameraRunning) {
+      try {
+        setIsStoppingCamera(true);
+        await fetch('/api/camera/stop', { method: 'POST' });
+        setIsCameraRunning(false);
+        setLiveData(null);
+      } catch (error) {
+        console.error("Failed to stop camera:", error);
+        toast.error("Failed to stop camera on the server.");
+      } finally {
+        setIsStoppingCamera(false);
       }
-    });
+    } else {
+      try {
+        setIsStartingCamera(true);
+        await fetch('/api/camera/start', { method: 'POST' });
+        setIsCameraRunning(true);
+      } catch (error) {
+        console.error("Failed to start camera:", error);
+        toast.error(error.response?.data?.message || error.response?.data?.detail || "Failed to start camera on the server.");
+      } finally {
+        setIsStartingCamera(false);
+      }
+    }
   };
 
   const handleReset = () => {
@@ -78,10 +123,25 @@ export default function Analysis() {
         <p className="text-muted-foreground mt-2">Trigger a complete LangGraph agent evaluation across Sensor, CV, and Permit systems.</p>
       </div>
 
+      <div className="flex gap-4 mb-4">
+        <Button 
+          variant={mode === 'upload' ? 'default' : 'outline'} 
+          onClick={() => { setMode('upload'); handleReset(); }}
+        >
+          <Upload className="w-4 h-4 mr-2" /> Upload Image
+        </Button>
+        <Button 
+          variant={mode === 'live' ? 'default' : 'outline'} 
+          onClick={() => { setMode('live'); handleReset(); }}
+        >
+          <Video className="w-4 h-4 mr-2" /> Live Camera
+        </Button>
+      </div>
+
       <Card className="glass-card min-h-[400px]">
         <CardContent className="p-8">
           <AnimatePresence mode="wait">
-            {!isPending && !evalResult && !isError && (
+            {mode === 'upload' && !isPending && !evalResult && !isError && (
               <motion.div
                 key="step-upload"
                 initial={{ opacity: 0, x: 20 }}
@@ -99,7 +159,7 @@ export default function Analysis() {
                   <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
                     <Upload className="w-8 h-8" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">Upload Camera Frame (Optional)</h3>
+                  <h3 className="text-lg font-semibold mb-2">Upload Camera Frame</h3>
                   <p className="text-sm text-muted-foreground mb-4">Simulate the visual feed for the CV Agent.</p>
                   
                   {file && (
@@ -110,14 +170,94 @@ export default function Analysis() {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button size="lg" onClick={startAnalysis}>
+                  <Button size="lg" onClick={handleStartAnalysis}>
                     Run Agent Evaluation <PlayCircle className="w-5 h-5 ml-2" />
                   </Button>
                 </div>
               </motion.div>
             )}
 
-            {isPending && (
+            {mode === 'live' && (
+              <motion.div
+                key="step-live"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center justify-between p-6 border rounded-xl bg-accent/10">
+                  <div>
+                    <h3 className="text-lg font-semibold">Live Camera Processing</h3>
+                    <p className="text-sm text-muted-foreground">Start the camera to begin real-time CV analysis.</p>
+                  </div>
+                  <Button 
+                    size="lg" 
+                    variant={isCameraRunning ? "destructive" : "default"}
+                    onClick={toggleCamera}
+                    disabled={isStartingCamera || isStoppingCamera}
+                  >
+                    {isCameraRunning ? (
+                      <><CameraOff className="w-5 h-5 mr-2" /> Stop Camera</>
+                    ) : (
+                      <><Camera className="w-5 h-5 mr-2" /> Start Camera</>
+                    )}
+                  </Button>
+                </div>
+
+                {isCameraRunning && (
+                  <div className="space-y-4">
+                    <div className={`flex items-center gap-2 mb-4 p-3 rounded-lg border ${liveData?.violations?.length > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-success/10 border-success/30'}`}>
+                      <div className={`w-3 h-3 rounded-full animate-pulse ${liveData?.violations?.length > 0 ? 'bg-destructive' : 'bg-success'}`} />
+                      <span className={`font-semibold text-sm ${liveData?.violations?.length > 0 ? 'text-destructive' : 'text-success'}`}>
+                        {liveData?.violations?.length > 0 ? 'WARNING: Safety Violations Detected' : 'Live Feed Active - All Compliant'}
+                      </span>
+                    </div>
+
+                    <div className={`rounded-xl overflow-hidden border-4 max-w-2xl mx-auto shadow-[0_0_30px_rgba(0,0,0,0.1)] relative transition-all duration-300 ${liveData?.violations?.length > 0 ? 'border-destructive shadow-[0_0_30px_rgba(239,68,68,0.3)]' : 'border-success shadow-[0_0_30px_rgba(34,197,94,0.3)]'}`}>
+                      <img 
+                        src="/api/cv/video_stream" 
+                        alt="Live YOLO CV Feed" 
+                        className="w-full h-auto object-cover" 
+                      />
+                      {/* Overlay to make it look like AI is analyzing */}
+                      <div className="absolute inset-0 border-2 border-primary/50 animate-pulse pointer-events-none rounded-xl" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mt-6">
+                      <Card className="bg-background">
+                        <CardContent className="p-4">
+                          <h4 className="text-sm font-semibold text-muted-foreground mb-2">Workers Detected</h4>
+                          <p className="text-3xl font-bold">{liveData ? liveData.workers_detected : '--'}</p>
+                        </CardContent>
+                      </Card>
+                      <Card className={`transition-all duration-300 ${liveData?.violations?.length > 0 ? 'bg-destructive/10 border-destructive/30' : 'bg-success/10 border-success/30'}`}>
+                        <CardContent className="p-4 flex flex-col items-center justify-center">
+                          <h4 className={`text-sm font-semibold mb-2 ${liveData?.violations?.length > 0 ? 'text-destructive' : 'text-success'}`}>Active Violations</h4>
+                          <p className={`text-4xl font-black ${liveData?.violations?.length > 0 ? 'text-destructive' : 'text-success'}`}>{liveData ? liveData.violations?.length : '--'}</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {liveData?.violations?.length > 0 && (
+                      <div className="mt-6 space-y-3">
+                        <h4 className="font-semibold text-destructive flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4" /> Safety Alerts
+                        </h4>
+                        {liveData.violations.map((v, i) => (
+                          <div key={i} className="p-3 border border-destructive/20 bg-destructive/10 rounded-lg flex justify-between items-center">
+                            <span className="font-medium text-destructive">{v.violation_type}</span>
+                            <span className="text-sm text-destructive/80">Worker: {v.worker_id} ({(v.confidence * 100).toFixed(0)}%)</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* Remaining result screens for Upload Mode... */}
+            {mode === 'upload' && isPending && (
               <motion.div
                 key="step-processing"
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -138,7 +278,7 @@ export default function Analysis() {
               </motion.div>
             )}
 
-            {isError && (
+            {mode === 'upload' && isError && (
               <motion.div
                 key="step-error"
                 initial={{ opacity: 0 }}
@@ -152,7 +292,7 @@ export default function Analysis() {
               </motion.div>
             )}
 
-            {evalResult && (
+            {mode === 'upload' && evalResult && (
               <motion.div
                 key="step-results"
                 initial={{ opacity: 0, y: 20 }}
@@ -166,45 +306,6 @@ export default function Analysis() {
                      <p className="text-muted-foreground">Risk Score: {evalResult.risk_fusion_out?.score} | Severity: {evalResult.risk_fusion_out?.severity}</p>
                    </div>
                 </div>
-
-                <div className="grid md:grid-cols-3 gap-6">
-                   <Card className="glass-card hover-lift">
-                     <CardContent className="p-6">
-                       <h4 className="font-bold mb-2">Sensor Agent</h4>
-                       <p className="text-sm">Anomaly Score: {evalResult.sensor_anomaly_out?.anomaly_score}</p>
-                       <p className="text-sm">Severity: {evalResult.sensor_anomaly_out?.severity}</p>
-                     </CardContent>
-                   </Card>
-                   <Card className="glass-card hover-lift">
-                     <CardContent className="p-6">
-                       <h4 className="font-bold mb-2">CV Agent</h4>
-                       <p className="text-sm">Violations: {evalResult.cv_safety_out?.violations?.length}</p>
-                     </CardContent>
-                   </Card>
-                   <Card className="glass-card hover-lift">
-                     <CardContent className="p-6">
-                       <h4 className="font-bold mb-2">Permit Agent</h4>
-                       <p className="text-sm">Conflicts: {evalResult.permit_intel_out?.conflicts?.length}</p>
-                     </CardContent>
-                   </Card>
-                </div>
-
-                {evalResult.rag_compliance_out && (
-                  <Card className="glass-card border-warning/50 bg-warning/5 hover-lift">
-                    <CardContent className="p-6">
-                      <h4 className="font-bold text-warning mb-4">AI Compliance Recommendations (RAG)</h4>
-                      <ul className="list-disc pl-5 space-y-2">
-                        {evalResult.rag_compliance_out.recommended_actions?.map((action, i) => (
-                          <li key={i} className="text-sm">{action}</li>
-                        ))}
-                      </ul>
-                      <div className="mt-4 pt-4 border-t border-warning/20">
-                        <p className="text-xs text-muted-foreground">Sources cited: {evalResult.rag_compliance_out.rag_sources_cited?.join(', ')}</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
                 <div className="flex justify-end">
                   <Button variant="outline" onClick={handleReset}>New Evaluation</Button>
                 </div>

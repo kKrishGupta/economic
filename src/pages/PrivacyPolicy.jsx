@@ -22,7 +22,7 @@ export default function PrivacyPolicy() {
         <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6">
           Privacy Policy
         </h1>
-        <p className="text-muted-foreground mb-8">Last updated: October 2024</p>
+        <p className="text-muted-foreground mb-8">Last updated: July 2026</p>
 
         <div className="prose prose-slate dark:prose-invert max-w-none space-y-6 text-foreground/80">
           <p>

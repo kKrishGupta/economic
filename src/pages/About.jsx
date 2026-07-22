@@ -32,7 +32,7 @@ export default function About() {
       <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto mt-20">
         {[
           { title: "Founded in 2026", icon: Building },
-          { title: "50+ Enterprise Clients", icon: Globe },
+          { title: "2+ Enterprise Clients", icon: Globe },
           { title: "Team of AI Experts", icon: Users }
         ].map((stat, i) => (
           <motion.div
