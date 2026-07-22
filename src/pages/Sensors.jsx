@@ -39,16 +39,25 @@ export default function Sensors() {
 
   // Update chart when websocket sends new data
   useEffect(() => {
-    if (safetyData?.sensor_data) {
+    if (safetyData?.sensor_raw_history) {
+      const history = safetyData.sensor_raw_history;
+      // History is an array of [Gas, Temp, Pressure]
+      const latestReading = history[history.length - 1];
+      
       const now = new Date();
-      setTimeData(prev => [
-        ...prev.slice(1), 
-        { 
-          time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`, 
-          temp: safetyData.sensor_data.temperature || 28.0, 
-          pressure: safetyData.sensor_data.gas_pressure || 1.2 
-        }
-      ]);
+      setTimeData(prev => {
+        // Keep last 10 points
+        const newPrev = prev.length >= 10 ? prev.slice(1) : prev;
+        return [
+          ...newPrev, 
+          { 
+            time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`, 
+            temp: latestReading[1] || 28.0, 
+            pressure: latestReading[2] || 1.2,
+            gas: latestReading[0] || 18.0
+          }
+        ];
+      });
     }
   }, [safetyData]);
 
@@ -58,8 +67,9 @@ export default function Sensors() {
     return 'text-success';
   };
 
-  const currentTemp = safetyData?.sensor_data?.temperature?.toFixed(1) || '28.5';
-  const currentPressure = safetyData?.sensor_data?.gas_pressure?.toFixed(1) || '1.2';
+  const currentTemp = safetyData?.sensor_raw_history?.at(-1)?.[1]?.toFixed(1) || '28.5';
+  const currentPressure = safetyData?.sensor_raw_history?.at(-1)?.[2]?.toFixed(2) || '1.20';
+  const currentGas = safetyData?.sensor_raw_history?.at(-1)?.[0]?.toFixed(1) || '18.0';
   const severity = safetyData?.risk_fusion_out?.severity || 'NORMAL';
 
   return (
@@ -102,8 +112,8 @@ export default function Sensors() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[
           { name: 'Core Temp', value: `${currentTemp}°C`, status: severity, icon: ThermometerSun, color: getStatusColor(severity) },
-          { name: 'Gas Pressure', value: `${currentPressure} kPa`, status: 'Normal', icon: Wind, color: 'text-primary' },
-          { name: 'Humidity', value: '45%', status: 'Normal', icon: Droplets, color: 'text-primary' },
+          { name: 'Gas Concentration', value: `${currentGas}% LEL`, status: severity === 'CRITICAL' && currentGas > 20 ? 'CRITICAL' : 'Normal', icon: Wind, color: currentGas > 20 ? 'text-destructive' : 'text-primary' },
+          { name: 'Atm Pressure', value: `${currentPressure} atm`, status: 'Normal', icon: Droplets, color: 'text-primary' },
           { name: 'Vibration', value: '0.8 g', status: 'Normal', icon: Gauge, color: 'text-primary' },
         ].map((sensor, index) => (
           <motion.div
