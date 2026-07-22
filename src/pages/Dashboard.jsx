@@ -282,6 +282,41 @@ export default function Dashboard() {
                     No active compliance recommendations required. System is stable.
                  </div>
                )}
+
+               {/* SHOW RAG SIMILAR INCIDENTS */}
+               {safetyData?.rag_compliance_out?.similar_incidents && safetyData.rag_compliance_out.similar_incidents.length > 0 && (
+                 <div className="space-y-3 mt-6 border-t border-border/50 pt-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Similar Historical Incidents (RAG)</p>
+                    {safetyData.rag_compliance_out.similar_incidents.map((incident, i) => (
+                       <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                         <div className="flex justify-between items-start mb-1">
+                           <p className="font-bold text-sm text-destructive">{incident.plant}</p>
+                           <span className="text-[10px] bg-destructive/20 text-destructive px-2 py-0.5 rounded-full font-bold">{(incident.similarity_score * 100).toFixed(0)}% Match</span>
+                         </div>
+                         <p className="text-xs text-muted-foreground mb-2 font-mono">{incident.date} - {incident.incident_id}</p>
+                         <p className="text-sm mb-2">{incident.description}</p>
+                         <div className="bg-destructive/20 p-2 rounded text-xs font-semibold text-destructive mt-2">Outcome: {incident.outcome}</div>
+                       </motion.div>
+                    ))}
+                 </div>
+               )}
+
+               {/* SHOW RAG APPLICABLE REGULATIONS */}
+               {safetyData?.rag_compliance_out?.applicable_regulations && safetyData.rag_compliance_out.applicable_regulations.length > 0 && (
+                 <div className="space-y-3 mt-6 border-t border-border/50 pt-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase">Regulatory Violations (RAG)</p>
+                    {safetyData.rag_compliance_out.applicable_regulations.map((reg, i) => (
+                       <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-3 bg-warning/10 border border-warning/20 rounded-lg flex items-start space-x-3">
+                         <AlertTriangle className="w-4 h-4 mt-0.5 text-warning shrink-0" />
+                         <div>
+                           <p className="text-sm font-bold text-warning">{reg.title} (Clause {reg.clause})</p>
+                           <p className="text-xs mt-1 text-foreground/90">{reg.requirement}</p>
+                           <p className="text-[10px] text-muted-foreground mt-2 font-mono break-all">Source: {reg.source}</p>
+                         </div>
+                       </motion.div>
+                    ))}
+                 </div>
+               )}
              </div>
            </CardContent>
         </Card>
@@ -294,15 +329,18 @@ export default function Dashboard() {
           <CardContent className="h-[300px]">
             {sensorChartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={sensorChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                  <Line type="monotone" dataKey="Gas" stroke="#ef4444" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="Temp" stroke="#f97316" strokeWidth={2} dot={false} />
-                  <Line type="monotone" dataKey="Pressure" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                <LineChart data={sensorChartData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
                   <CartesianGrid stroke="#ccc" strokeDasharray="5 5" opacity={0.2} />
                   <XAxis dataKey="time" stroke="var(--muted-foreground)" fontSize={12} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={12} domain={['auto', 'auto']} tickFormatter={(value) => value.toFixed(0)} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" fontSize={12} domain={['auto', 'auto']} tickFormatter={(value) => value.toFixed(2)} />
+                  
                   <Tooltip contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }} />
                   <Legend />
+                  
+                  <Line yAxisId="left" type="monotone" dataKey="Gas" name="Gas (%)" stroke="#ef4444" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  <Line yAxisId="left" type="monotone" dataKey="Temp" name="Temp (°C)" stroke="#f97316" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  <Line yAxisId="right" type="monotone" dataKey="Pressure" name="Pressure (atm)" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -361,7 +399,7 @@ export default function Dashboard() {
                       className="flex items-start space-x-4 bg-destructive/20 p-3 rounded-md border border-destructive/40"
                     >
                       <div className="flex-1 space-y-1">
-                        <p className="text-xs font-bold text-destructive">{conflict.reason}</p>
+                        <p className="text-xs font-bold text-destructive">{conflict.risk_description || conflict.reason}</p>
                       </div>
                     </motion.div>
                   ))}
