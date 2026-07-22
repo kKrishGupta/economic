@@ -1,26 +1,37 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { ShieldAlert, Sun, Moon } from 'lucide-react';
 import { useTheme } from '../providers/ThemeProvider';
 import { Button } from '../components/ui/Button';
 import { PageTransition } from '../components/ui/PageTransition';
+import { motion } from 'framer-motion';
 
 export function LandingLayout() {
   const location = useLocation();
   const { theme, setTheme } = useTheme();
   const isActive = (path) => location.pathname === path;
 
+  const [isScrolled, setIsScrolled] = useState(false);
+  
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background text-foreground overflow-hidden font-sans flex flex-col">
-      {/* Animated Background blobs */}
-      <div className="fixed top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] animate-blob pointer-events-none -z-10" />
-      <div className="fixed top-[20%] right-[-10%] w-[30%] h-[50%] bg-accent/20 rounded-full blur-[100px] animate-blob animation-delay-2000 pointer-events-none -z-10" />
-      <div className="fixed bottom-[-20%] left-[20%] w-[50%] h-[40%] bg-secondary/20 rounded-full blur-[120px] animate-blob animation-delay-4000 pointer-events-none -z-10" />
+      {/* Animated Background layers */}
+      <div className="noise-overlay" />
+      <div className="fixed inset-0 bg-grid-pattern pointer-events-none -z-20 opacity-[0.15]" />
+      <div className="fixed top-[-10%] left-[-10%] w-[50%] h-[50%] bg-primary/20 rounded-full blur-[120px] bg-gradient-aurora animate-blob pointer-events-none -z-10" />
+      <div className="fixed top-[20%] right-[-10%] w-[40%] h-[60%] bg-accent/20 rounded-full blur-[100px] animate-blob animation-delay-2000 pointer-events-none -z-10" />
+      <div className="fixed bottom-[-20%] left-[20%] w-[60%] h-[50%] bg-secondary/20 rounded-full blur-[120px] animate-blob animation-delay-4000 pointer-events-none -z-10" />
 
       {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full transition-all duration-300">
-        <div className="absolute inset-0 glass border-b shadow-sm" />
-        <nav className="relative flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
+      <header className={`fixed top-0 z-50 w-full transition-all duration-500 ${isScrolled ? 'py-3' : 'py-6'}`}>
+        <div className={`absolute inset-0 transition-all duration-500 ${isScrolled ? 'glass shadow-sm border-b' : 'bg-transparent border-transparent'}`} />
+        <nav className="relative flex items-center justify-between px-6 max-w-7xl mx-auto">
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
               <ShieldAlert className="w-6 h-6 text-primary-foreground" />
@@ -59,7 +70,13 @@ export function LandingLayout() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border glass py-16 relative z-10 mt-auto">
+      <motion.footer 
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.8 }}
+        className="border-t border-border glass py-16 relative z-10 mt-auto"
+      >
         <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12">
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4 group inline-flex">
@@ -87,7 +104,7 @@ export function LandingLayout() {
             </ul>
           </div>
         </div>
-      </footer>
+      </motion.footer>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ThermometerSun, Wind, Droplets, Gauge, PlayCircle, Loader2 } from 'lucide-react';
+import { ThermometerSun, Wind, Droplets, Gauge, PlayCircle, Loader2, Activity } from 'lucide-react';
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   BarChart, Bar
@@ -8,11 +8,15 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useSensorAnalysis } from '../hooks/api/useSensors';
+import { useSafetySocket } from '../hooks/useSafetySocket';
 
 export default function Sensors() {
-  const { mutate: analyzeSensor, isPending, data: sensorData, isError, error } = useSensorAnalysis();
+  const { mutate: analyzeSensor, isPending, data: mlSensorData, isError, error } = useSensorAnalysis();
   
-  // Simulated rolling data for the chart, will be updated by the backend result
+  // Connect to the Live STOMP Websocket for Zone 3
+  const { safetyData, isConnected } = useSafetySocket('ZONE_3');
+
+  // Simulated rolling data for the chart, will be updated by the backend result AND the socket stream
   const [timeData, setTimeData] = useState([
     { time: '10:00', temp: 28.0, pressure: 1.2 },
     { time: '10:05', temp: 28.2, pressure: 1.2 },
@@ -33,20 +37,20 @@ export default function Sensors() {
     analyzeSensor(payload);
   };
 
+  // Update chart when websocket sends new data
   useEffect(() => {
-    if (sensorData) {
-      // Append the new finding to the chart
+    if (safetyData?.sensor_data) {
       const now = new Date();
       setTimeData(prev => [
         ...prev.slice(1), 
         { 
-          time: `${now.getHours()}:${now.getMinutes()}`, 
-          temp: sensorData.current_value || 31.0, 
-          pressure: 1.8 
+          time: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`, 
+          temp: safetyData.sensor_data.temperature || 28.0, 
+          pressure: safetyData.sensor_data.gas_pressure || 1.2 
         }
       ]);
     }
-  }, [sensorData]);
+  }, [safetyData]);
 
   const getStatusColor = (severity) => {
     if (severity === 'CRITICAL') return 'text-destructive';
@@ -54,14 +58,25 @@ export default function Sensors() {
     return 'text-success';
   };
 
+  const currentTemp = safetyData?.sensor_data?.temperature?.toFixed(1) || '28.5';
+  const currentPressure = safetyData?.sensor_data?.gas_pressure?.toFixed(1) || '1.2';
+  const severity = safetyData?.risk_fusion_out?.severity || 'NORMAL';
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Live Sensor Telemetry</h2>
+          <h2 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            Live Sensor Telemetry
+            {isConnected && (
+              <span className="flex items-center text-xs font-bold px-2 py-1 bg-success/10 text-success rounded-full border border-success/20">
+                <span className="w-2 h-2 rounded-full bg-success mr-2 animate-pulse" /> LIVE
+              </span>
+            )}
+          </h2>
           <p className="text-muted-foreground mt-2">Real-time PyTorch LSTM monitoring across all facility zones.</p>
         </div>
-        <Button onClick={triggerLiveAnalysis} disabled={isPending} className="whitespace-nowrap">
+        <Button onClick={triggerLiveAnalysis} disabled={isPending} className="whitespace-nowrap shadow-glow">
           {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <PlayCircle className="w-4 h-4 mr-2" />}
           Run LSTM Inference
         </Button>
@@ -73,21 +88,21 @@ export default function Sensors() {
          </div>
       )}
 
-      {sensorData && (
-        <Card className={`glass-card border-${getStatusColor(sensorData.severity).split('-')[1]}/50`}>
+      {mlSensorData && (
+        <Card className={`glass-card border-${getStatusColor(mlSensorData.severity).split('-')[1]}/50`}>
           <CardHeader>
-            <CardTitle className={getStatusColor(sensorData.severity)}>
-              Anomaly Detected: {sensorData.severity}
+            <CardTitle className={getStatusColor(mlSensorData.severity)}>
+              Anomaly Detected: {mlSensorData.severity}
             </CardTitle>
-            <CardDescription>LSTM Autoencoder Reconstruction Score: {sensorData.anomaly_score?.toFixed(4)}</CardDescription>
+            <CardDescription>LSTM Autoencoder Reconstruction Score: {mlSensorData.anomaly_score?.toFixed(4)}</CardDescription>
           </CardHeader>
         </Card>
       )}
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {[
-          { name: 'Core Temp', value: sensorData?.current_value ? `${sensorData.current_value}°C` : '28.5°C', status: sensorData ? sensorData.severity : 'Normal', icon: ThermometerSun, color: sensorData ? getStatusColor(sensorData.severity) : 'text-primary' },
-          { name: 'Gas Pressure', value: '1.2 kPa', status: 'Normal', icon: Wind, color: 'text-primary' },
+          { name: 'Core Temp', value: `${currentTemp}°C`, status: severity, icon: ThermometerSun, color: getStatusColor(severity) },
+          { name: 'Gas Pressure', value: `${currentPressure} kPa`, status: 'Normal', icon: Wind, color: 'text-primary' },
           { name: 'Humidity', value: '45%', status: 'Normal', icon: Droplets, color: 'text-primary' },
           { name: 'Vibration', value: '0.8 g', status: 'Normal', icon: Gauge, color: 'text-primary' },
         ].map((sensor, index) => (
@@ -106,7 +121,7 @@ export default function Sensors() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{sensor.value}</div>
+                <div className="text-2xl font-bold font-mono">{sensor.value}</div>
                 <div className={`text-xs mt-1 font-medium ${sensor.color}`}>
                   Status: {sensor.status}
                 </div>

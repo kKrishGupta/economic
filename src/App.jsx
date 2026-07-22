@@ -102,7 +102,7 @@ function App() {
                   {/* Admin Only Routes inside Dashboard */}
                   <Route path="/analysis" element={<AdminRoute><Analysis /></AdminRoute>} />
                   <Route path="/sensors" element={<AdminRoute><Sensors /></AdminRoute>} />
-                  <Route path="/permits" element={<AdminRoute><Permits /></AdminRoute>} />
+                  <Route path="/permits" element={<Permits />} />
                   <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
                 </Route>
 

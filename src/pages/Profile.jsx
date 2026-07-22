@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../providers/AuthProvider';
 import { authService } from '../services/AuthService';
-import { User, Mail, ShieldAlert, Key, Loader2, CheckCircle2 } from 'lucide-react';
+import { User, Mail, ShieldAlert, Key, Phone, Loader2, CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/Card';
@@ -128,16 +128,37 @@ export default function Profile() {
                           type="text" 
                           defaultValue="Hidden by administrator"
                           readOnly
-                          className="pl-9 bg-muted/30 text-muted-foreground" 
+                          className="pl-9 bg-muted/30 text-muted-foreground cursor-not-allowed" 
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone Number</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          type="tel" 
+                          defaultValue={user?.phoneNumber || '+1 (555) 000-0000'}
+                          className="pl-9 bg-muted/30 focus:border-primary transition-colors" 
+                          readOnly 
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Role Configuration</label>
+                      <div className="relative">
+                        <ShieldAlert className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input 
+                          defaultValue={user?.role} 
+                          disabled 
+                          className="pl-9 bg-muted/50 cursor-not-allowed text-muted-foreground" 
                         />
                       </div>
                     </div>
                   </div>
                   
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Role Configuration</label>
-                    <Input defaultValue={user?.role} disabled className="bg-muted/50 cursor-not-allowed text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">Your role is strictly managed by the system administrator.</p>
+                  <div className="space-y-2 pt-4 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground">Your role and email are strictly managed by the system administrator.</p>
                   </div>
                 </div>
               </CardContent>

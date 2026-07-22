@@ -16,7 +16,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'USER'] },
   { name: 'Analysis', href: '/analysis', icon: Activity, roles: ['ADMIN'] },
   { name: 'Sensors', href: '/sensors', icon: Radio, roles: ['ADMIN'] },
-  { name: 'Permits', href: '/permits', icon: FileText, roles: ['ADMIN'] },
+  { name: 'Permits', href: '/permits', icon: FileText, roles: ['ADMIN', 'USER'] },
   { name: 'About Us', href: '/dashboard-about', icon: FileText, roles: ['ADMIN', 'USER'] },
   { name: 'Admin', href: '/admin', icon: ShieldAlert, roles: ['ADMIN'] },
 ];
@@ -183,13 +183,14 @@ export function DashboardLayout() {
                 <PanelLeftOpen className="w-5 h-5" />
               </button>
             )}
-            <div className="hidden md:flex items-center relative">
-              <Search className="w-4 h-4 absolute left-3 text-muted-foreground" />
-              <input 
-                type="text" 
-                placeholder="Search resources..." 
-                className="pl-9 pr-4 py-2 text-sm bg-muted/50 border-transparent rounded-full focus:bg-background focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all w-64 focus:w-80"
-              />
+            <div className="hidden md:flex items-center bg-muted/30 px-4 py-1.5 rounded-full border border-border/50 backdrop-blur-sm">
+              <span className="text-sm text-muted-foreground mr-1">
+                Welcome back,
+              </span>
+              <span className="text-sm font-bold bg-gradient-to-r from-primary to-cyan-400 bg-clip-text text-transparent mr-2">
+                {user?.name || 'User'}
+              </span>
+              <span className="text-sm animate-wave inline-block origin-bottom-right">👋</span>
             </div>
           </div>
 

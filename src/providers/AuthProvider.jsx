@@ -24,10 +24,19 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Import the API dynamically to avoid circular dependencies if any
+      const { simulatorApi } = await import('../services/api/simulator.api');
+      if (user?.role === 'ADMIN') {
+        await simulatorApi.updateMode({ simulationMode: 'NORMAL', zoneId: 'ZONE_3' }).catch(console.error);
+      }
+    } catch (err) {
+      console.error('Failed to reset simulation mode on logout', err);
+    }
     authService.logout();
     setUser(null);
-    toast.success('Logged out successfully.');
+    toast.success('Logged out successfully. Simulator reset to Normal.');
     window.location.href = '/login';
   };
 

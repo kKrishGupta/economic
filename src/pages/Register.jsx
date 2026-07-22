@@ -80,8 +80,8 @@ export default function Register() {
               <Input
                 type="tel"
                 placeholder="+1 (555) 000-0000"
-                {...register("phone")}
-                error={errors.phone?.message}
+                {...register("phoneNumber")}
+                error={errors.phoneNumber?.message}
                 className="h-11"
               />
             </div>
