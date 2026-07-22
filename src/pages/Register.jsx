@@ -76,6 +76,16 @@ export default function Register() {
               />
             </div>
             <div className="space-y-1">
+              <label className="text-sm font-medium leading-none">Phone Number</label>
+              <Input
+                type="tel"
+                placeholder="+1 (555) 000-0000"
+                {...register("phone")}
+                error={errors.phone?.message}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-1">
               <label className="text-sm font-medium leading-none">Password</label>
               <div className="relative">
                 <Input
@@ -129,17 +139,7 @@ export default function Register() {
               Create Account
             </Button>
 
-            {/* DEMO BUTTONS */}
-            <div className="mt-4 pt-4 border-t border-border/50">
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full text-xs"
-                onClick={() => onSubmit({ username: `demo_user_${Math.floor(Math.random() * 1000)}`, email: 'demo@example.com', password: 'Password@123', role: 'ADMIN' })}
-              >
-                Demo Registration (Admin)
-              </Button>
-            </div>
+
           </form>
 
           <div className="mt-6 text-center text-sm">
