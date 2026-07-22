@@ -37,18 +37,18 @@ export function DataTable({
 
   return (
     <div className="space-y-4">
-      <div className="overflow-x-auto border border-border/50 rounded-lg bg-card relative">
+      <div className="overflow-x-auto border border-border bg-card rounded-xl shadow-soft relative">
         {isLoading && (
           <div className="absolute inset-0 bg-background/50 backdrop-blur-sm z-10 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         )}
         <table className="w-full text-sm text-left">
-          <thead className="text-xs text-muted-foreground uppercase bg-muted/50 border-b">
+          <thead className="text-xs text-muted-foreground uppercase tracking-wider bg-muted/30 border-b">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <th key={header.id} className="px-6 py-4 font-medium">
+                  <th key={header.id} className="px-6 py-4 font-semibold">
                     {header.isPlaceholder
                       ? null
                       : flexRender(
@@ -65,10 +65,10 @@ export function DataTable({
               table.getRowModel().rows.map((row) => (
                 <tr
                   key={row.id}
-                  className="bg-card border-b border-border/50 hover:bg-muted/30 transition-colors"
+                  className="bg-card border-b border-border hover:bg-muted/50 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-6 py-4">
+                    <td key={cell.id} className="px-6 py-4 whitespace-nowrap">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   ))}

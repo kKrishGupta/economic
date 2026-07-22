@@ -74,7 +74,7 @@ export default function Sensors() {
       )}
 
       {sensorData && (
-        <Card className={`border-${getStatusColor(sensorData.severity).split('-')[1]}/50`}>
+        <Card className={`glass-card border-${getStatusColor(sensorData.severity).split('-')[1]}/50`}>
           <CardHeader>
             <CardTitle className={getStatusColor(sensorData.severity)}>
               Anomaly Detected: {sensorData.severity}
@@ -97,7 +97,7 @@ export default function Sensors() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className={`border-border/50 relative overflow-hidden group ${sensor.status === 'CRITICAL' ? 'border-destructive/50' : ''}`}>
+            <Card className={`glass-card hover-lift relative overflow-hidden group ${sensor.status === 'CRITICAL' ? 'border-destructive/50' : ''}`}>
               {sensor.status === 'CRITICAL' && <div className="absolute top-0 right-0 w-2 h-2 m-4 bg-destructive rounded-full animate-ping" />}
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-sm font-medium">{sensor.name}</CardTitle>
@@ -117,7 +117,7 @@ export default function Sensors() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-border/50">
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle>Temperature Timeline (Zone 3)</CardTitle>
             <CardDescription>Continuous monitoring with AI anomaly overlay.</CardDescription>
@@ -139,7 +139,7 @@ export default function Sensors() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50">
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle>Pressure Variance (Zone 3)</CardTitle>
             <CardDescription>Correlated with temperature spikes.</CardDescription>

@@ -18,8 +18,8 @@ export function LandingLayout() {
       <div className="fixed bottom-[-20%] left-[20%] w-[50%] h-[40%] bg-secondary/20 rounded-full blur-[120px] animate-blob animation-delay-4000 pointer-events-none -z-10" />
 
       {/* Navbar */}
-      <header className="sticky top-0 z-50 w-full">
-        <div className="absolute inset-0 bg-background/50 backdrop-blur-md border-b border-border/50 shadow-sm" />
+      <header className="sticky top-0 z-50 w-full transition-all duration-300">
+        <div className="absolute inset-0 glass border-b shadow-sm" />
         <nav className="relative flex items-center justify-between px-6 py-4 max-w-7xl mx-auto">
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 group-hover:scale-105 transition-transform">
@@ -59,8 +59,8 @@ export function LandingLayout() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 bg-card/80 backdrop-blur-md py-12 relative z-10 mt-auto">
-        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-8">
+      <footer className="border-t border-border glass py-16 relative z-10 mt-auto">
+        <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-4 gap-12">
           <div className="col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4 group inline-flex">
               <ShieldAlert className="w-6 h-6 text-primary group-hover:rotate-12 transition-transform" />

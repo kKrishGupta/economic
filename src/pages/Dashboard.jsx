@@ -138,7 +138,7 @@ export default function Dashboard() {
       >
         {/* Animated Radial Score */}
         <motion.div variants={itemVariants}>
-          <Card className={`border-border/50 shadow-sm overflow-hidden relative group h-full ${isCritical ? 'border-destructive/50 bg-destructive/5' : ''}`}>
+          <Card className={`glass-card overflow-hidden relative group h-full hover-lift ${isCritical ? 'border-destructive/50 bg-destructive/5' : ''}`}>
             <CardHeader className="flex flex-row items-center justify-between pb-0">
               <CardTitle className="text-sm font-medium">Live Safety Index</CardTitle>
               <Activity className={`w-4 h-4 ${isCritical ? 'text-destructive animate-pulse' : 'text-success'}`} />
@@ -173,7 +173,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className={`border-border/50 shadow-sm overflow-hidden relative group h-full ${severity !== 'NORMAL' ? 'border-warning/50 bg-warning/5' : ''}`}>
+          <Card className={`glass-card overflow-hidden relative group h-full hover-lift ${severity !== 'NORMAL' ? 'border-warning/50 bg-warning/5' : ''}`}>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Risk Level</CardTitle>
               <AlertTriangle className={`w-4 h-4 ${safetyData?.risk_level !== 'NORMAL' ? 'text-warning' : 'text-muted-foreground'}`} />
@@ -190,7 +190,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className="border-border/50 shadow-sm overflow-hidden relative group h-full">
+          <Card className="glass-card overflow-hidden relative group h-full hover-lift">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">System Health</CardTitle>
               <Users className="w-4 h-4 text-primary" />
@@ -208,7 +208,7 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={itemVariants}>
-          <Card className="border-border/50 shadow-sm overflow-hidden relative group h-full">
+          <Card className="glass-card overflow-hidden relative group h-full hover-lift">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Auto Mitigation</CardTitle>
               <ShieldAlert className="w-4 h-4 text-primary" />
@@ -226,7 +226,7 @@ export default function Dashboard() {
       </motion.div>
 
       <div className="grid gap-6 md:grid-cols-7">
-        <Card className="md:col-span-4 border-border/50">
+        <Card className="md:col-span-4 glass-card shadow-soft">
           <CardHeader>
             <CardTitle>AI Fusion Insights & Recommendations</CardTitle>
             <CardDescription>Real-time intelligence from the multi-agent fusion engine.</CardDescription>
@@ -321,37 +321,7 @@ export default function Dashboard() {
            </CardContent>
         </Card>
 
-        <Card className="md:col-span-7 border-border/50 mt-6">
-          <CardHeader>
-            <CardTitle>Live Sensor Telemetry</CardTitle>
-            <CardDescription>Real-time gas, temperature, and pressure readings for {zoneId || 'ZONE_3'}.</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {sensorChartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={sensorChartData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
-                  <CartesianGrid stroke="#ccc" strokeDasharray="5 5" opacity={0.2} />
-                  <XAxis dataKey="time" stroke="var(--muted-foreground)" fontSize={12} />
-                  <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={12} domain={['auto', 'auto']} tickFormatter={(value) => value.toFixed(0)} />
-                  <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" fontSize={12} domain={['auto', 'auto']} tickFormatter={(value) => value.toFixed(2)} />
-                  
-                  <Tooltip contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }} />
-                  <Legend />
-                  
-                  <Line yAxisId="left" type="monotone" dataKey="Gas" name="Gas (%)" stroke="#ef4444" strokeWidth={2} dot={false} isAnimationActive={false} />
-                  <Line yAxisId="left" type="monotone" dataKey="Temp" name="Temp (°C)" stroke="#f97316" strokeWidth={2} dot={false} isAnimationActive={false} />
-                  <Line yAxisId="right" type="monotone" dataKey="Pressure" name="Pressure (atm)" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-lg">
-                Waiting for sensor stream...
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-3 border-border/50">
+        <Card className="md:col-span-3 glass-card shadow-soft">
           <CardHeader>
             <CardTitle>Live Violations Feed</CardTitle>
             <CardDescription>Computer vision infractions detected instantly.</CardDescription>
@@ -406,6 +376,36 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-7 glass-card shadow-soft mt-6">
+          <CardHeader>
+            <CardTitle>Live Sensor Telemetry</CardTitle>
+            <CardDescription>Real-time gas, temperature, and pressure readings for {zoneId || 'ZONE_3'}.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            {sensorChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={sensorChartData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
+                  <CartesianGrid stroke="#ccc" strokeDasharray="5 5" opacity={0.2} />
+                  <XAxis dataKey="time" stroke="var(--muted-foreground)" fontSize={12} />
+                  <YAxis yAxisId="left" stroke="var(--muted-foreground)" fontSize={12} domain={['auto', 'auto']} tickFormatter={(value) => value.toFixed(0)} />
+                  <YAxis yAxisId="right" orientation="right" stroke="#3b82f6" fontSize={12} domain={['auto', 'auto']} tickFormatter={(value) => value.toFixed(2)} />
+                  
+                  <Tooltip contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }} />
+                  <Legend />
+                  
+                  <Line yAxisId="left" type="monotone" dataKey="Gas" name="Gas (%)" stroke="#ef4444" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  <Line yAxisId="left" type="monotone" dataKey="Temp" name="Temp (°C)" stroke="#f97316" strokeWidth={2} dot={false} isAnimationActive={false} />
+                  <Line yAxisId="right" type="monotone" dataKey="Pressure" name="Pressure (atm)" stroke="#3b82f6" strokeWidth={2} dot={false} isAnimationActive={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground border-2 border-dashed rounded-lg">
+                Waiting for sensor stream...
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

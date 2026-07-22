@@ -58,21 +58,21 @@ export default function Profile() {
     >
       <div>
         <h1 className="text-3xl font-bold tracking-tight mb-2">Profile Settings</h1>
-        <p className="text-muted-foreground">Manage your account details and security preferences.</p>
+        <p className="text-muted-foreground">View your account details and security status.</p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-8">
         
         {/* Left Column: Avatar & Quick Info */}
         <motion.div variants={itemVariants} className="space-y-8 md:col-span-1">
-          <Card className="border-border/50 shadow-sm overflow-hidden relative group">
+          <Card className="glass-card shadow-sm overflow-hidden relative group hover-lift">
             <div className="h-24 bg-gradient-to-r from-primary/20 to-accent/20 absolute inset-x-0 top-0 transition-all group-hover:from-primary/30 group-hover:to-accent/30" />
             <CardContent className="pt-12 pb-6 px-6 flex flex-col items-center text-center relative z-10">
               <div className="w-24 h-24 rounded-full bg-card border-4 border-background flex items-center justify-center text-4xl font-bold text-primary shadow-xl mb-4 transform transition-transform group-hover:scale-105">
                 {user?.username?.charAt(0).toUpperCase() || 'U'}
               </div>
               <h2 className="text-xl font-bold">{user?.username || 'User'}</h2>
-              <p className="text-sm text-muted-foreground mb-4">{user?.email || 'No email provided'}</p>
+              <p className="text-sm text-muted-foreground mb-4">Email hidden</p>
               
               <div className="inline-flex items-center rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                 {user?.role || 'User'}
@@ -80,7 +80,7 @@ export default function Profile() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/50 shadow-sm">
+          <Card className="glass-card shadow-sm hover-lift">
              <CardHeader className="pb-4">
                <CardTitle className="text-sm font-medium flex items-center text-muted-foreground">
                  <ShieldAlert className="w-4 h-4 mr-2" /> Account Status
@@ -105,13 +105,13 @@ export default function Profile() {
         <div className="md:col-span-2 space-y-8">
           
           <motion.div variants={itemVariants}>
-            <Card className="border-border/50 shadow-sm transition-all hover:shadow-md">
+            <Card className="glass-card shadow-sm hover-lift">
               <CardHeader>
                 <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Update your registered personal details.</CardDescription>
+                <CardDescription>Your registered personal details.</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="space-y-6" onSubmit={handleUpdateProfile}>
+                <div className="space-y-6">
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Username</label>
@@ -125,11 +125,10 @@ export default function Profile() {
                       <div className="relative">
                         <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input 
-                          type="email" 
-                          value={email} 
-                          onChange={(e) => setEmail(e.target.value)}
-                          className="pl-9 transition-all focus:ring-2 focus:ring-primary/20" 
-                          placeholder="your.email@example.com"
+                          type="text" 
+                          defaultValue="Hidden by administrator"
+                          readOnly
+                          className="pl-9 bg-muted/30 text-muted-foreground" 
                         />
                       </div>
                     </div>
@@ -140,47 +139,25 @@ export default function Profile() {
                     <Input defaultValue={user?.role} disabled className="bg-muted/50 cursor-not-allowed text-muted-foreground" />
                     <p className="text-xs text-muted-foreground">Your role is strictly managed by the system administrator.</p>
                   </div>
-                  
-                  <div className="pt-2 flex justify-end">
-                    <Button type="submit" disabled={isSaving || email === user?.email} className="w-full sm:w-auto transition-all">
-                      {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
-                      {isSaving ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                  </div>
-                </form>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <Card className="border-border/50 shadow-sm transition-all hover:shadow-md">
+            <Card className="glass-card shadow-sm hover-lift">
               <CardHeader>
                 <CardTitle>Security</CardTitle>
                 <CardDescription>Update your password and secure your account.</CardDescription>
               </CardHeader>
               <CardContent>
-                <form className="space-y-4" onSubmit={handleUpdatePassword}>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Current Password</label>
-                    <div className="relative">
-                      <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input type="password" placeholder="••••••••" required className="pl-9 transition-all focus:ring-2 focus:ring-primary/20" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">New Password</label>
-                    <div className="relative">
-                      <Key className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input type="password" placeholder="••••••••" required minLength={8} className="pl-9 transition-all focus:ring-2 focus:ring-primary/20" />
-                    </div>
-                  </div>
-                  <div className="pt-2 flex justify-start">
-                    <Button type="submit" variant="default" disabled={isUpdatingPassword} className="w-full sm:w-auto transition-all">
-                      {isUpdatingPassword ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Key className="w-4 h-4 mr-2" />}
-                      {isUpdatingPassword ? 'Updating...' : 'Update Password'}
-                    </Button>
-                  </div>
-                </form>
+                <div className="p-4 bg-muted/50 rounded-lg border border-border/50 text-center">
+                  <Key className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <h3 className="font-semibold text-sm">Password Management Disabled</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Self-service password resets are disabled in this environment. Please contact your system administrator to update your credentials.
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </motion.div>

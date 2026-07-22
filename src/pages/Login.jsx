@@ -41,7 +41,7 @@ export default function Login() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-md"
       >
-        <div className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-3xl p-8 shadow-2xl relative z-10">
+        <div className="glass-card rounded-3xl p-8 shadow-2xl relative z-10">
           <div className="flex flex-col items-center mb-8">
             <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 mb-4">
               <ShieldAlert className="w-7 h-7 text-primary-foreground" />
@@ -88,25 +88,6 @@ export default function Login() {
               Sign In
             </Button>
             
-            {/* DEMO BUTTONS */}
-            <div className="flex flex-col sm:flex-row gap-2 mt-4 pt-4 border-t border-border/50">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 text-xs"
-                onClick={() => onSubmit({ username: 'demo_admin', password: 'password123' })}
-              >
-                Demo Admin
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1 text-xs"
-                onClick={() => onSubmit({ username: 'demo_user', password: 'password123' })}
-              >
-                Demo User
-              </Button>
-            </div>
           </form>
 
           <div className="mt-6 text-center text-sm">

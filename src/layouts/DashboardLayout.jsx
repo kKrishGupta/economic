@@ -5,7 +5,8 @@ import { useTheme } from '../providers/ThemeProvider';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, X, Sun, Moon, Bell, Search, User, LogOut, 
-  LayoutDashboard, Activity, Radio, FileText, Settings, ShieldAlert
+  LayoutDashboard, Activity, Radio, FileText, Settings, ShieldAlert,
+  PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,7 +25,7 @@ export function DashboardLayout() {
   const { user, logout, isAuthenticated } = useAuth();
   const { theme, setTheme } = useTheme();
   const location = useLocation();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 768);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -66,44 +67,30 @@ export function DashboardLayout() {
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row font-sans text-foreground">
-      {/* Mobile sidebar backdrop */}
-      <AnimatePresence>
-        {sidebarOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSidebarOpen(false)}
-            className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm md:hidden"
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sidebar */}
-      <motion.div
-        initial={false}
-        animate={{ 
-          x: sidebarOpen ? 0 : -320,
-          width: 280
-        }}
+    <div className="h-screen w-full bg-background flex overflow-hidden font-sans text-foreground">
+      {/* Sidebar Container */}
+      <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r bg-card shadow-lg md:relative md:flex md:w-64 md:translate-x-0 transition-transform duration-300 ease-in-out",
-          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+          "flex flex-col border-r bg-card shadow-lg transition-all duration-300 ease-in-out shrink-0 overflow-hidden",
+          sidebarOpen ? "w-[280px] md:w-64" : "w-0 border-r-0"
         )}
       >
-        <div className="flex h-16 items-center px-6 border-b">
-          <Link to="/dashboard" className="flex items-center gap-2">
+        {/* Inner fixed-width container prevents content squishing during transition */}
+        <div className="w-[280px] md:w-64 h-full flex flex-col shrink-0">
+        <div className="flex h-16 items-center justify-between px-6 border-b shrink-0">
+          <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <ShieldAlert className="w-5 h-5 text-primary-foreground" />
             </div>
-            <span className="text-xl font-bold tracking-tight">SafeOps <span className="text-primary">AI</span></span>
+            <span className="text-xl font-bold tracking-tight whitespace-nowrap">SafeOps <span className="text-primary">AI</span></span>
           </Link>
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="ml-auto md:hidden text-muted-foreground hover:text-foreground"
+            className="flex items-center justify-center w-8 h-8 rounded-md border border-border/50 text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer shrink-0"
+            aria-label="Close sidebar"
+            title="Close sidebar"
           >
-            <X className="w-5 h-5" />
+            <PanelLeftClose className="w-4 h-4" />
           </button>
         </div>
 
@@ -116,25 +103,25 @@ export function DashboardLayout() {
                 to={item.href}
                 className={cn(
                   isActive
-                    ? 'bg-primary/10 text-primary font-semibold'
+                    ? 'bg-primary text-primary-foreground font-semibold shadow-soft'
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-                  'group flex items-center px-3 py-2.5 text-sm rounded-md transition-colors relative'
+                  'group flex items-center px-4 py-3 text-sm rounded-lg transition-all relative overflow-hidden'
                 )}
               >
                 {isActive && (
                   <motion.div
                     layoutId="active-nav-indicator"
-                    className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
+                    className="absolute inset-0 bg-primary opacity-10"
                   />
                 )}
                 <item.icon
                   className={cn(
-                    isActive ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground',
-                    'mr-3 flex-shrink-0 h-5 w-5 transition-colors'
+                    isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover:text-foreground',
+                    'mr-3 flex-shrink-0 h-5 w-5 transition-colors z-10'
                   )}
                   aria-hidden="true"
                 />
-                {item.name}
+                <span className="z-10">{item.name}</span>
               </Link>
             );
           })}
@@ -151,19 +138,22 @@ export function DashboardLayout() {
              </div>
           </div>
         </div>
-      </motion.div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Navbar */}
-        <header className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 border-b bg-card/50 backdrop-blur-md sticky top-0 z-30">
+        <header className="h-16 shrink-0 flex items-center justify-between px-4 sm:px-6 lg:px-8 border-b glass z-30 transition-all">
           <div className="flex items-center gap-4">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="md:hidden text-muted-foreground hover:text-foreground"
-            >
-              <Menu className="w-6 h-6" />
-            </button>
+            {!sidebarOpen && (
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="text-muted-foreground hover:text-foreground p-2 -ml-2 rounded-full hover:bg-muted transition-colors"
+              >
+                <PanelLeftOpen className="w-5 h-5" />
+              </button>
+            )}
             <div className="hidden md:flex items-center relative">
               <Search className="w-4 h-4 absolute left-3 text-muted-foreground" />
               <input 
@@ -274,7 +264,7 @@ export function DashboardLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-background p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background p-4 sm:p-6 lg:p-8">
           <Outlet />
         </main>
       </div>

@@ -41,7 +41,7 @@ export default function Features() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1, duration: 0.5 }}
-            className="bg-card border border-border/50 rounded-2xl p-8 shadow-sm hover:shadow-md transition-shadow"
+            className="glass-card rounded-2xl p-8 hover-lift"
           >
             <feat.icon className="w-10 h-10 text-primary mb-4" />
             <h3 className="text-2xl font-bold mb-2">{feat.title}</h3>

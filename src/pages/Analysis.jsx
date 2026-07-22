@@ -78,7 +78,7 @@ export default function Analysis() {
         <p className="text-muted-foreground mt-2">Trigger a complete LangGraph agent evaluation across Sensor, CV, and Permit systems.</p>
       </div>
 
-      <Card className="border-border/50 min-h-[400px]">
+      <Card className="glass-card min-h-[400px]">
         <CardContent className="p-8">
           <AnimatePresence mode="wait">
             {!isPending && !evalResult && !isError && (
@@ -168,20 +168,20 @@ export default function Analysis() {
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-6">
-                   <Card>
+                   <Card className="glass-card hover-lift">
                      <CardContent className="p-6">
                        <h4 className="font-bold mb-2">Sensor Agent</h4>
                        <p className="text-sm">Anomaly Score: {evalResult.sensor_anomaly_out?.anomaly_score}</p>
                        <p className="text-sm">Severity: {evalResult.sensor_anomaly_out?.severity}</p>
                      </CardContent>
                    </Card>
-                   <Card>
+                   <Card className="glass-card hover-lift">
                      <CardContent className="p-6">
                        <h4 className="font-bold mb-2">CV Agent</h4>
                        <p className="text-sm">Violations: {evalResult.cv_safety_out?.violations?.length}</p>
                      </CardContent>
                    </Card>
-                   <Card>
+                   <Card className="glass-card hover-lift">
                      <CardContent className="p-6">
                        <h4 className="font-bold mb-2">Permit Agent</h4>
                        <p className="text-sm">Conflicts: {evalResult.permit_intel_out?.conflicts?.length}</p>
@@ -190,7 +190,7 @@ export default function Analysis() {
                 </div>
 
                 {evalResult.rag_compliance_out && (
-                  <Card className="border-warning/50 bg-warning/5">
+                  <Card className="glass-card border-warning/50 bg-warning/5 hover-lift">
                     <CardContent className="p-6">
                       <h4 className="font-bold text-warning mb-4">AI Compliance Recommendations (RAG)</h4>
                       <ul className="list-disc pl-5 space-y-2">

@@ -113,7 +113,7 @@ export default function Settings() {
             {/* Appearance Settings */}
             {activeTab === 'appearance' && (
               <motion.div key="appearance" variants={contentVariants} initial="initial" animate="animate" exit="exit">
-                <Card className="border-border/50 shadow-sm">
+                <Card className="glass-card shadow-sm">
                   <CardHeader>
                     <CardTitle>Appearance</CardTitle>
                     <CardDescription>Customize how the dashboard looks on your device.</CardDescription>
@@ -150,7 +150,7 @@ export default function Settings() {
             {/* Notifications Settings */}
             {activeTab === 'notifications' && (
               <motion.div key="notifications" variants={contentVariants} initial="initial" animate="animate" exit="exit">
-                <Card className="border-border/50 shadow-sm">
+                <Card className="glass-card shadow-sm">
                   <CardHeader>
                     <CardTitle>Notification Preferences</CardTitle>
                     <CardDescription>Choose what alerts you want to receive and how.</CardDescription>
@@ -197,7 +197,7 @@ export default function Settings() {
             {/* Security Settings */}
             {activeTab === 'security' && (
               <motion.div key="security" variants={contentVariants} initial="initial" animate="animate" exit="exit">
-                <Card className="border-border/50 shadow-sm">
+                <Card className="glass-card shadow-sm">
                   <CardHeader>
                     <CardTitle>Security</CardTitle>
                     <CardDescription>Update your password and secure your account.</CardDescription>
@@ -247,7 +247,7 @@ export default function Settings() {
             {/* Account Settings */}
             {activeTab === 'account' && (
               <motion.div key="account" variants={contentVariants} initial="initial" animate="animate" exit="exit">
-                <Card className="border-destructive/30 shadow-sm relative overflow-hidden group">
+                <Card className="glass-card border-destructive/30 shadow-sm relative overflow-hidden group hover-lift">
                   <div className="absolute inset-0 bg-destructive/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                   <CardHeader className="relative z-10">
                     <CardTitle className="text-destructive flex items-center gap-2">

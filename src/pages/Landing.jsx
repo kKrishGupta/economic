@@ -38,7 +38,7 @@ export default function Landing() {
           </div>
           <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 leading-tight">
             Industrial Safety, <br className="hidden md:block" />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Powered by Intelligence</span>
+            <span className="text-gradient">Powered by Intelligence</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
             The enterprise platform that predicts hazards, monitors environments, and ensures compliance before accidents happen. Protect your workforce with absolute confidence.
@@ -65,7 +65,7 @@ export default function Landing() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.8, delay: 0.2 }}
-          className="rounded-2xl border border-border/50 bg-card/40 backdrop-blur-xl p-2 shadow-2xl relative"
+          className="rounded-2xl glass p-2 shadow-2xl relative"
         >
           <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-accent/5 rounded-2xl pointer-events-none" />
           <div className="rounded-xl overflow-hidden border border-border/50 bg-background/80 shadow-inner">
@@ -136,7 +136,7 @@ export default function Landing() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="bg-card border border-border/50 rounded-2xl p-8 hover:shadow-xl hover:border-primary/50 transition-all group"
+                className="glass-card rounded-2xl p-8 hover-lift hover:border-primary/50 group"
               >
                 <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:scale-110 transition-all">
                   <feature.icon className="w-6 h-6 text-primary group-hover:text-primary-foreground" />

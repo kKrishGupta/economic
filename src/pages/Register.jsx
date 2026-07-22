@@ -46,7 +46,7 @@ export default function Register() {
         transition={{ duration: 0.4 }}
         className="w-full max-w-md"
       >
-        <div className="bg-card/60 backdrop-blur-xl border border-border/50 rounded-3xl p-8 shadow-2xl relative z-10">
+        <div className="glass-card rounded-3xl p-8 shadow-2xl relative z-10">
           <div className="flex flex-col items-center mb-8">
             <div className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/30 mb-4">
               <ShieldAlert className="w-7 h-7 text-primary-foreground" />

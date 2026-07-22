@@ -93,7 +93,7 @@ export default function Admin() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-4">
-        <Card className="border-border/50 bg-card/50">
+        <Card className="glass-card hover-lift">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Backend Health</CardTitle>
             <Server className={`w-4 h-4 ${healthData ? 'text-success' : 'text-destructive'}`} />
@@ -110,7 +110,7 @@ export default function Admin() {
           </CardContent>
         </Card>
         
-        <Card className="border-border/50 bg-card/50">
+        <Card className="glass-card hover-lift">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Agent Status</CardTitle>
             <Activity className="w-4 h-4 text-primary" />
@@ -121,7 +121,7 @@ export default function Admin() {
           </CardContent>
         </Card>
         
-        <Card className="border-border/50 bg-card/50">
+        <Card className="glass-card hover-lift">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Vector DB</CardTitle>
             <Database className="w-4 h-4 text-primary" />
@@ -132,7 +132,7 @@ export default function Admin() {
           </CardContent>
         </Card>
 
-        <Card className="border-border/50 bg-card/50">
+        <Card className="glass-card hover-lift">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total API Invocations</CardTitle>
             <Cpu className="w-4 h-4 text-primary" />
@@ -144,7 +144,7 @@ export default function Admin() {
         </Card>
       </div>
 
-      <Card className="border-border/50 border-primary/20 bg-primary/5">
+      <Card className="glass-card border-primary/20 bg-primary/5">
         <CardHeader>
           <CardTitle className="text-xl">Simulation & Scenario Control</CardTitle>
           <CardDescription>Manually override the sensor stream or trigger historical disaster scenarios.</CardDescription>
@@ -182,7 +182,7 @@ export default function Admin() {
         </CardContent>
       </Card>
 
-      <Card className="border-border/50">
+      <Card className="glass-card">
         <CardHeader>
           <CardTitle>Live System Load</CardTitle>
           <CardDescription>Real-time simulation of CPU / Memory usage processing LangGraph nodes.</CardDescription>
@@ -211,7 +211,7 @@ export default function Admin() {
       </Card>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <Card className="border-border/50">
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle>User Management</CardTitle>
           </CardHeader>
@@ -228,7 +228,7 @@ export default function Admin() {
           </CardContent>
         </Card>
         
-        <Card className="border-border/50">
+        <Card className="glass-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
                <FileKey className="w-5 h-5" /> Recent Audit Logs

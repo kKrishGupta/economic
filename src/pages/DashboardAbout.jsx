@@ -37,7 +37,7 @@ export default function DashboardAbout() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1, duration: 0.5 }}
           >
-            <Card className="text-center border-border/50 h-full flex flex-col justify-center py-8">
+            <Card className="text-center glass-card h-full flex flex-col justify-center py-8 hover-lift">
               <CardContent className="pt-6">
                 <stat.icon className="w-12 h-12 text-primary mx-auto mb-4" />
                 <h3 className="text-xl font-bold">{stat.title}</h3>

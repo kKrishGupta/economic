@@ -41,7 +41,7 @@ export default function Solutions() {
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
-            className="flex flex-col md:flex-row items-center gap-8 bg-card border border-border/50 rounded-3xl p-8 shadow-sm"
+            className="flex flex-col md:flex-row items-center gap-8 glass-card rounded-3xl p-8 hover-lift"
           >
             <div className={`w-32 h-32 rounded-2xl flex items-center justify-center flex-shrink-0 ${sol.bg}`}>
               <sol.icon className={`w-16 h-16 ${sol.color}`} />

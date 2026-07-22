@@ -36,7 +36,7 @@ export default function Pricing() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1, duration: 0.5 }}
-            className={`bg-card border rounded-3xl p-8 ${i === 1 ? 'border-primary shadow-xl scale-105' : 'border-border/50 shadow-sm'}`}
+            className={`glass-card rounded-3xl p-8 transition-all ${i === 1 ? 'border-primary shadow-glow scale-105 relative z-10' : 'border-border shadow-soft hover-lift'}`}
           >
             <h3 className="text-2xl font-bold mb-2">{tier}</h3>
             <div className="text-4xl font-extrabold mb-6">

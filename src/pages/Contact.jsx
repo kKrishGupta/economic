@@ -55,7 +55,7 @@ export default function Contact() {
           </div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="bg-card p-8 rounded-3xl border border-border/50">
+        <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="glass-card p-8 rounded-3xl hover-lift">
           <form className="space-y-4">
             <Input placeholder="Your Name" />
             <Input type="email" placeholder="Email Address" />

@@ -39,8 +39,7 @@ export default function About() {
             key={i}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1, duration: 0.5 }}
-            className="text-center p-8 bg-card border border-border/50 rounded-2xl"
+            className="text-center p-8 glass-card rounded-2xl hover-lift"
           >
             <stat.icon className="w-12 h-12 text-primary mx-auto mb-4" />
             <h3 className="text-xl font-bold">{stat.title}</h3>

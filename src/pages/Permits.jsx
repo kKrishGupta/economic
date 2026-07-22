@@ -62,7 +62,7 @@ export default function Permits() {
       )}
 
       {permitData && permitData.conflicts?.length > 0 && (
-        <Card className="border-destructive/50 bg-destructive/5">
+        <Card className="glass-card border-destructive/50 bg-destructive/5">
           <CardHeader>
             <CardTitle className="text-destructive flex items-center gap-2">
               <ShieldAlert className="w-5 h-5" /> 
@@ -96,7 +96,7 @@ export default function Permits() {
             expiry: '17:00 Today',
             risk: 'High'
           }].map((permit) => (
-          <Card key={permit.id} className="border-border/50 hover:border-primary/50 transition-colors">
+          <Card key={permit.id} className="glass-card hover-lift hover:border-primary/50">
             <CardHeader className="pb-2">
               <div className="flex justify-between items-start">
                 <div className="p-2 bg-primary/10 rounded-lg">
