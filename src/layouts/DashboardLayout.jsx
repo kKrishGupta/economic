@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { useQueryClient } from '@tanstack/react-query';
-import { RoleSwitcher } from '../components/debug/RoleSwitcher';
+import toast from 'react-hot-toast';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['ADMIN', 'USER'] },
@@ -40,6 +40,8 @@ export function DashboardLayout() {
   React.useEffect(() => {
     if (latestEval) {
       const severity = latestEval.risk_fusion_out?.severity;
+      const isAlert = severity === 'CRITICAL' || severity === 'HIGH';
+      
       const newNotif = {
         id: Date.now(),
         title: `Eval: ${latestEval.action_taken}`,
@@ -49,8 +51,35 @@ export function DashboardLayout() {
         read: false
       };
       setNotifications(prev => [newNotif, ...prev].slice(0, 5)); // Keep last 5
+
+      // Show dynamic toast popups based on severity
+      if (isAlert) {
+        toast.error(`⚠️ ALERT: ${latestEval.action_taken} in Zone ${latestEval.zone_id}`, {
+          duration: 5000,
+          position: 'top-right',
+          id: `alert-${latestEval.zone_id}-${Date.now()}` // Prevent duplicates
+        });
+        
+        // If the user is an admin, show that a mail alert was dispatched
+        if (user?.role === 'ADMIN') {
+          setTimeout(() => {
+            toast('Emergency Mail Alert dispatched to Admin team', {
+              icon: '📧',
+              duration: 4000,
+              position: 'top-right',
+              id: `mail-${latestEval.zone_id}-${Date.now()}`
+            });
+          }, 500); // Small delay for visual effect
+        }
+      } else {
+        toast.success(`Update: ${latestEval.action_taken}`, {
+          duration: 3000,
+          position: 'top-right',
+          id: `update-${latestEval.zone_id}-${Date.now()}`
+        });
+      }
     }
-  }, [latestEval]);
+  }, [latestEval, user?.role]);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -96,7 +125,7 @@ export function DashboardLayout() {
 
         <nav className="flex-1 space-y-1 px-3 py-4 overflow-y-auto">
           {filteredNavigation.map((item) => {
-            const isActive = location.pathname.startsWith(item.href);
+            const isActive = location.pathname === item.href || location.pathname.startsWith(item.href + '/');
             return (
               <Link
                 key={item.name}
@@ -165,8 +194,6 @@ export function DashboardLayout() {
           </div>
 
           <div className="flex items-center gap-4">
-            <RoleSwitcher />
-            
             <button
               onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               className="p-2 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
@@ -195,9 +222,14 @@ export function DashboardLayout() {
                   >
                     <div className="px-4 py-3 border-b flex items-center justify-between bg-muted/30">
                       <h3 className="font-semibold text-sm">Notifications {unreadCount > 0 && `(${unreadCount})`}</h3>
-                      {unreadCount > 0 && (
-                        <button onClick={markAllAsRead} className="text-xs text-primary hover:underline">Mark all as read</button>
-                      )}
+                      <div className="flex items-center gap-3">
+                        {unreadCount > 0 && (
+                          <button onClick={markAllAsRead} className="text-xs text-primary hover:underline">Mark all as read</button>
+                        )}
+                        <button onClick={() => setNotificationsOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                     <div className="max-h-80 overflow-y-auto">
                       {notifications.map((notif) => (

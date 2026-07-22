@@ -14,6 +14,7 @@ import { Button } from '../components/ui/Button';
 import { useSystemHealth } from '../hooks/api/useDashboard';
 import { useSafetySocket } from '../hooks/useSafetySocket';
 import { useSimulatorMode, useUpdateSimulatorMode } from '../hooks/useSimulator';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -88,8 +89,15 @@ export default function Dashboard() {
                    key={mode}
                    variant={simModeData?.simulationMode === mode ? 'default' : 'outline'}
                    size="sm"
-                   className="h-6 text-[10px] px-2 py-0"
-                   onClick={() => updateMode({ simulationMode: mode, zoneId: 'ZONE_3' })}
+                   className={`h-6 text-[10px] px-2 py-0 ${user?.role !== 'ADMIN' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                   onClick={(e) => {
+                     if (user?.role !== 'ADMIN') {
+                       e.preventDefault();
+                       toast.error("Only Admin can change simulation mode.");
+                       return;
+                     }
+                     updateMode({ simulationMode: mode, zoneId: 'ZONE_3' });
+                   }}
                    disabled={isUpdatingMode}
                  >
                    {mode}
